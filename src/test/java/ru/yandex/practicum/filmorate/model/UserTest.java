@@ -30,9 +30,8 @@ class UserTest {
         user.setEmail("valid@email.com");
         user.setLogin("validLogin");
         user.setBirthday(LocalDate.of(2000, 1, 1));
+        user.setName(null); // Явно задаём имя как null
 
-        assertNull(user.getName());
-        user.setName(null);
         assertEquals(user.getLogin(), user.getName(), "При пустом имени должен использоваться логин");
     }
 
