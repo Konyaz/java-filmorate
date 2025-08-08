@@ -2,31 +2,33 @@ package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PastOrPresent;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class User {
-    private Integer id;
-
+    private Long id;
+    @Email(message = "Email должен быть корректным")
     @NotBlank(message = "Email не может быть пустым")
-    @Email(message = "Некорректный формат email")
     private String email;
-
     @NotBlank(message = "Логин не может быть пустым")
-    @Pattern(regexp = "\\S+", message = "Логин не должен содержать пробелы")
     private String login;
-
     private String name;
-
-    @PastOrPresent(message = "Дата рождения не может быть в будущем")
+    @Past(message = "Дата рождения должна быть в прошлом")
+    @NotNull(message = "Дата рождения обязательна")
     private LocalDate birthday;
+    private Set<Long> friends = new HashSet<>();
 
-    // Умный геттер для имени
-    public String getName() {
-        return (name == null || name.isBlank()) ? login : name;
+    public void addFriend(Long friendId) {
+        friends.add(friendId);
+    }
+
+    public void removeFriend(Long friendId) {
+        friends.remove(friendId);
     }
 }

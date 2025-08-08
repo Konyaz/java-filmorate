@@ -1,37 +1,83 @@
 package ru.yandex.practicum.filmorate.exception;
 
-import jakarta.validation.ValidationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import ru.yandex.practicum.filmorate.dto.ErrorResponse;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 class GlobalExceptionHandlerTest {
-
     @Autowired
-    private ru.yandex.practicum.filmorate.exception.GlobalExceptionHandler exceptionHandler;
+    private GlobalExceptionHandler exceptionHandler;
 
     @Test
-    void shouldHandleValidationException() {
-        ValidationException ex = new ValidationException("Test error message");
-        ResponseEntity<Map<String, String>> response = exceptionHandler.handleValidationException(ex);
+    void shouldHandleNotFoundException() {
+        NotFoundException ex = new NotFoundException("Фильм с ID 1 не найден");
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("Test error message", response.getBody().get("error"));
+        ErrorResponse response = exceptionHandler.handleNotFoundException(ex);
+
+        assertEquals("Фильм с ID 1 не найден", response.getError());
+        assertNotNull(response.getTimestamp());
     }
 
     @Test
-    void shouldHandleNotFoundValidationException() {
-        ValidationException ex = new ValidationException("Фильм не найден");
-        ResponseEntity<Map<String, String>> response = exceptionHandler.handleValidationException(ex);
+    void shouldHandleValidationException() {
+        ValidationException ex = new ValidationException("Пользователь уже поставил лайк");
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals("Фильм не найден", response.getBody().get("error"));
+        ErrorResponse response = exceptionHandler.handleValidationException(ex);
+
+        assertEquals("Пользователь уже поставил лайк", response.getError());
+        assertNotNull(response.getTimestamp());
+    }
+
+    @Test
+    void shouldHandleMethodArgumentNotValidException() {
+        FieldError fieldError = new FieldError("film", "name", "Название не может быть пустым");
+        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(null, new org.springframework.validation.BeanPropertyBindingResult(new Object(), "film") {
+            @Override
+            public List<FieldError> getFieldErrors() {
+                return List.of(fieldError);
+            }
+        });
+
+        Map<String, String> response = exceptionHandler.handleMethodArgumentNotValidException(ex);
+
+        assertEquals("Название не может быть пустым", response.get("name"));
+    }
+
+    @Test
+    void shouldHandleConstraintViolationException() {
+        ConstraintViolation<?> violation = mock(ConstraintViolation.class);
+        when(violation.getPropertyPath()).thenReturn(mock(jakarta.validation.Path.class));
+        when(violation.getPropertyPath().toString()).thenReturn("duration");
+        when(violation.getMessage()).thenReturn("Продолжительность должна быть положительной");
+        ConstraintViolationException ex = new ConstraintViolationException(Set.of(violation));
+
+        Map<String, String> response = exceptionHandler.handleConstraintViolationException(ex);
+
+        assertEquals("Продолжительность должна быть положительной", response.get("duration"));
+    }
+
+    @Test
+    void shouldHandleOtherExceptions() {
+        Exception ex = new RuntimeException("Unexpected error");
+
+        ErrorResponse response = exceptionHandler.handleOtherExceptions(ex);
+
+        assertEquals("Внутренняя ошибка сервера", response.getError());
+        assertNotNull(response.getTimestamp());
     }
 }
