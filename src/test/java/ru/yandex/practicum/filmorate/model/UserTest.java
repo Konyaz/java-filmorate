@@ -1,0 +1,70 @@
+package ru.yandex.practicum.filmorate.model;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDate;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class UserTest {
+    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+
+    @Test
+    void shouldCreateValidUser() {
+        User user = new User();
+        user.setEmail("valid@email.com");
+        user.setLogin("validLogin");
+        user.setBirthday(LocalDate.of(2000, 1, 1));
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertTrue(violations.isEmpty(), "Валидный пользователь не должен иметь нарушений");
+    }
+
+    @Test
+    void shouldUseLoginWhenNameIsEmpty() {
+        User user = new User();
+        user.setEmail("valid@email.com");
+        user.setLogin("validLogin");
+        user.setBirthday(LocalDate.of(2000, 1, 1));
+        user.setName(null); // Явно задаём имя как null
+
+        assertEquals(user.getLogin(), user.getName(), "При пустом имени должен использоваться логин");
+    }
+
+    @Test
+    void shouldFailWhenEmailIsInvalid() {
+        User user = new User();
+        user.setEmail("invalid-email");
+        user.setLogin("validLogin");
+        user.setBirthday(LocalDate.of(2000, 1, 1));
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(), "Некорректный email должен вызывать ошибку");
+    }
+
+    @Test
+    void shouldFailWhenLoginContainsSpaces() {
+        User user = new User();
+        user.setEmail("valid@email.com");
+        user.setLogin("invalid login");
+        user.setBirthday(LocalDate.of(2000, 1, 1));
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(), "Логин с пробелами должен вызывать ошибку");
+    }
+
+    @Test
+    void shouldFailWhenBirthdayInFuture() {
+        User user = new User();
+        user.setEmail("valid@email.com");
+        user.setLogin("validLogin");
+        user.setBirthday(LocalDate.now().plusDays(1));
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(), "Дата рождения в будущем должна вызывать ошибку");
+    }
+}
