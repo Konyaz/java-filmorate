@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -41,6 +42,9 @@ public class UserService {
     public void addFriend(Long id, Long friendId) {
         User user = getById(id);
         User friend = getById(friendId);
+        if (user.getFriends().contains(friendId)) {
+            throw new ValidationException("Пользователь с ID " + friendId + " уже добавлен в друзья");
+        }
         user.addFriend(friendId);
         friend.addFriend(id);
         userStorage.update(user);
@@ -50,12 +54,13 @@ public class UserService {
     public void removeFriend(Long id, Long friendId) {
         User user = getById(id);
         User friend = getById(friendId);
-        if (user.getFriends().contains(friendId)) {
-            user.removeFriend(friendId);
-            friend.removeFriend(id);
-            userStorage.update(user);
-            userStorage.update(friend);
+        if (!user.getFriends().contains(friendId)) {
+            throw new ValidationException("Пользователь с ID " + friendId + " не в списке друзей");
         }
+        user.removeFriend(friendId);
+        friend.removeFriend(id);
+        userStorage.update(user);
+        userStorage.update(friend);
     }
 
     public List<User> getFriends(Long id) {

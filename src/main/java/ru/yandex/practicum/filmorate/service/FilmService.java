@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -47,6 +48,9 @@ public class FilmService {
         Film film = getById(filmId);
         User user = userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
+        if (film.getLikes().contains(userId)) {
+            throw new ValidationException("Пользователь с ID " + userId + " уже поставил лайк фильму с ID " + filmId);
+        }
         film.addLike(userId);
         filmStorage.update(film);
     }
@@ -55,10 +59,11 @@ public class FilmService {
         Film film = getById(filmId);
         User user = userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
-        if (film.getLikes().contains(userId)) {
-            film.removeLike(userId);
-            filmStorage.update(film);
+        if (!film.getLikes().contains(userId)) {
+            throw new ValidationException("Пользователь с ID " + userId + " не ставил лайк фильму с ID " + filmId);
         }
+        film.removeLike(userId);
+        filmStorage.update(film);
     }
 
     public List<Film> getPopularFilms(int count) {
