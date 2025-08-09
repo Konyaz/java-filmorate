@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -46,7 +45,7 @@ public class FilmService {
 
     public void addLike(Long filmId, Long userId) {
         Film film = getById(filmId);
-        User user = userStorage.getById(userId)
+        userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         if (film.getLikes().contains(userId)) {
             throw new ValidationException("Пользователь с ID " + userId + " уже поставил лайк фильму с ID " + filmId);
@@ -57,13 +56,10 @@ public class FilmService {
 
     public void removeLike(Long filmId, Long userId) {
         Film film = getById(filmId);
-        User user = userStorage.getById(userId)
+        userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
-        if (film.getLikes().contains(userId)) {
-            film.removeLike(userId);
-            filmStorage.update(film);
-        }
-        // Если лайка нет, ничего не делаем, так как Postman-тесты, скорее всего, этого ожидают.
+        film.getLikes().remove(userId);
+        filmStorage.update(film);
     }
 
     public List<Film> getPopularFilms(int count) {

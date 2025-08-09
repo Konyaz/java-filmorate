@@ -6,7 +6,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -156,18 +155,18 @@ class FilmServiceTest {
     }
 
     @Test
-    void removeLike_notLiked_throwsException() {
+    void removeLike_notLiked_doesNothing() {
         Film film = new Film();
         film.setId(1L);
         film.setLikes(new HashSet<>());
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
 
-        assertThrows(ValidationException.class, () -> filmService.removeLike(1L, 1L));
+        assertDoesNotThrow(() -> filmService.removeLike(1L, 1L));
 
         verify(filmStorage).getById(1L);
         verify(userStorage).getById(1L);
-        verify(filmStorage, never()).update(any(Film.class));
+        verify(filmStorage).update(any(Film.class));
     }
 
 

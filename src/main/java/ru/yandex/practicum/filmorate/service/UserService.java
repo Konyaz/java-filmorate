@@ -54,13 +54,10 @@ public class UserService {
     public void removeFriend(Long id, Long friendId) {
         User user = getById(id);
         User friend = getById(friendId);
-        if (user.getFriends().contains(friendId)) {
-            user.removeFriend(friendId);
-            friend.removeFriend(id);
-            userStorage.update(user);
-            userStorage.update(friend);
-        }
-        // Если друга нет, ничего не делаем.
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(id);
+        userStorage.update(user);
+        userStorage.update(friend);
     }
 
     public List<User> getFriends(Long id) {
