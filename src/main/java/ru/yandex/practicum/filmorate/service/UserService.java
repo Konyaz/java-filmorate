@@ -45,6 +45,7 @@ public class UserService {
         if (user.getFriends().contains(friendId)) {
             throw new ValidationException("Пользователь с ID " + friendId + " уже добавлен в друзья");
         }
+        // Двусторонняя дружба, как ожидается в sprint.json
         user.addFriend(friendId);
         friend.addFriend(id);
         userStorage.update(user);
@@ -54,6 +55,7 @@ public class UserService {
     public void removeFriend(Long id, Long friendId) {
         User user = getById(id);
         User friend = getById(friendId);
+        // Двусторонняя дружба: удаляем обоих пользователей друг у друга
         user.getFriends().remove(friendId);
         friend.getFriends().remove(id);
         userStorage.update(user);

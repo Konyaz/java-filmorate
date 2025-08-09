@@ -3,10 +3,9 @@ package ru.yandex.practicum.filmorate.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.User;
@@ -14,9 +13,9 @@ import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -29,71 +28,103 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Mock
+    @MockBean
     private UserService userService;
 
-    @InjectMocks
-    private UserController userController;
-
-    private User user;
+    private User user1;
+    private User user2;
 
     @BeforeEach
     void setUp() {
-        user = new User();
-        user.setEmail("test@example.com");
-        user.setLogin("testUser");
-        user.setName("Test User");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
+        user1 = new User();
+        user1.setId(1L);
+        user1.setEmail("user1@example.com");
+        user1.setLogin("user1");
+        user1.setName("User One");
+        user1.setBirthday(LocalDate.of(1990, 1, 1));
+
+        user2 = new User();
+        user2.setId(2L);
+        user2.setEmail("user2@example.com");
+        user2.setLogin("user2");
+        user2.setName("User Two");
+        user2.setBirthday(LocalDate.of(1991, 1, 1));
     }
 
     @Test
     void createUser_success() throws Exception {
-        User createdUser = new User();
-        createdUser.setId(1L);
-        createdUser.setEmail("test@example.com");
-        createdUser.setLogin("testUser");
-        createdUser.setName("Test User");
-        createdUser.setBirthday(LocalDate.of(1990, 1, 1));
-
-        when(userService.create(any(User.class))).thenReturn(createdUser);
+        when(userService.create(any(User.class))).thenReturn(user1);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(user)))
+                        .content(objectMapper.writeValueAsString(user1)))
                 .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(createdUser)));
+                .andExpect(content().json(objectMapper.writeValueAsString(user1)));
     }
 
     @Test
     void updateUser_success() throws Exception {
-        User updatedUser = new User();
-        updatedUser.setId(1L);
-        updatedUser.setEmail("updated@example.com");
-        updatedUser.setLogin("updatedUser");
-        updatedUser.setName("Updated User");
-        updatedUser.setBirthday(LocalDate.of(1991, 1, 1));
-
-        when(userService.update(any(User.class))).thenReturn(updatedUser);
+        when(userService.update(any(User.class))).thenReturn(user1);
 
         mockMvc.perform(put("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedUser)))
+                        .content(objectMapper.writeValueAsString(user1)))
                 .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(updatedUser)));
+                .andExpect(content().json(objectMapper.writeValueAsString(user1)));
     }
 
     @Test
     void getUsers_success() throws Exception {
-        User user1 = new User();
-        user1.setId(1L);
-        user1.setLogin("user1");
-        User user2 = new User();
-        user2.setId(2L);
-        user2.setLogin("user2");
         when(userService.getAll()).thenReturn(List.of(user1, user2));
 
         mockMvc.perform(get("/users"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(List.of(user1, user2))));
+    }
+
+    @Test
+    void getUserById_success() throws Exception {
+        when(userService.getById(1L)).thenReturn(user1);
+
+        mockMvc.perform(get("/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(user1)));
+    }
+
+    @Test
+    void addFriend_success() throws Exception {
+        doNothing().when(userService).addFriend(1L, 2L);
+
+        mockMvc.perform(put("/users/1/friends/2"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void removeFriend_success() throws Exception {
+        doNothing().when(userService).removeFriend(1L, 2L);
+
+        mockMvc.perform(delete("/users/1/friends/2"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getFriends_success() throws Exception {
+        user1.setFriends(Set.of(2L));
+        when(userService.getFriends(1L)).thenReturn(List.of(user2));
+
+        mockMvc.perform(get("/users/1/friends"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(List.of(user2))));
+    }
+
+    @Test
+    void getCommonFriends_success() throws Exception {
+        user1.setFriends(Set.of(2L));
+        user2.setFriends(Set.of(1L));
+        when(userService.getCommonFriends(1L, 2L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/users/1/friends/common/2"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(List.of())));
     }
 }
