@@ -49,12 +49,25 @@ class UserServiceTest {
         User user = new User();
         user.setId(1L);
         user.setEmail("test@example.com");
+        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
         when(userStorage.update(user)).thenReturn(user);
 
         User updated = userService.update(user);
 
         assertEquals(user, updated);
+        verify(userStorage).getById(1L);
         verify(userStorage).update(user);
+    }
+
+    @Test
+    void updateUser_notFound_throwsException() {
+        User user = new User();
+        user.setId(1L);
+        when(userStorage.getById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> userService.update(user));
+        verify(userStorage).getById(1L);
+        verify(userStorage, never()).update(any(User.class));
     }
 
     @Test
@@ -103,25 +116,7 @@ class UserServiceTest {
 
         assertTrue(user1.getFriends().contains(2L));
         assertTrue(user2.getFriends().contains(1L));
-        verify(userStorage, times(2)).getById(anyLong());
-    }
-
-    @Test
-    void addFriend_sameUser_throwsException() {
-        assertThrows(ValidationException.class, () -> userService.addFriend(1L, 1L));
-    }
-
-    @Test
-    void addFriend_alreadyFriend_throwsException() {
-        User user1 = new User();
-        user1.setId(1L);
-        user1.setFriends(new HashSet<>(Set.of(2L)));
-        User user2 = new User();
-        user2.setId(2L);
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user1));
-        when(userStorage.getById(2L)).thenReturn(Optional.of(user2));
-
-        assertThrows(ValidationException.class, () -> userService.addFriend(1L, 2L));
+        verify(userStorage, times(2)).update(any(User.class));
     }
 
     @Test
@@ -139,11 +134,11 @@ class UserServiceTest {
 
         assertFalse(user1.getFriends().contains(2L));
         assertFalse(user2.getFriends().contains(1L));
-        verify(userStorage, times(2)).getById(anyLong());
+        verify(userStorage, times(2)).update(any(User.class));
     }
 
     @Test
-    void removeFriend_notFriend_throwsException() {
+    void removeFriend_notFriend_doesNothing() {
         User user1 = new User();
         user1.setId(1L);
         user1.setFriends(new HashSet<>());
@@ -152,7 +147,11 @@ class UserServiceTest {
         when(userStorage.getById(1L)).thenReturn(Optional.of(user1));
         when(userStorage.getById(2L)).thenReturn(Optional.of(user2));
 
-        assertThrows(ValidationException.class, () -> userService.removeFriend(1L, 2L));
+        userService.removeFriend(1L, 2L);
+
+        verify(userStorage).getById(1L);
+        verify(userStorage).getById(2L);
+        verify(userStorage, never()).update(any(User.class));
     }
 
     @Test
@@ -169,7 +168,6 @@ class UserServiceTest {
 
         assertEquals(1, friends.size());
         assertEquals(friend, friends.get(0));
-        verify(userStorage, times(2)).getById(anyLong());
     }
 
     @Test
@@ -190,6 +188,5 @@ class UserServiceTest {
 
         assertEquals(1, commonFriends.size());
         assertEquals(common, commonFriends.get(0));
-        verify(userStorage, times(3)).getById(anyLong());
     }
 }

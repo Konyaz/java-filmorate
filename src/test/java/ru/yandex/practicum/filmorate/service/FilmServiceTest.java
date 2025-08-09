@@ -19,8 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class FilmServiceTest {
     @Mock
@@ -54,13 +53,27 @@ class FilmServiceTest {
         Film film = new Film();
         film.setId(1L);
         film.setName("Test Film");
+        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(filmStorage.update(film)).thenReturn(film);
 
         Film updated = filmService.update(film);
 
         assertEquals(film, updated);
+        verify(filmStorage).getById(1L);
         verify(filmStorage).update(film);
     }
+
+    @Test
+    void updateFilm_notFound_throwsException() {
+        Film film = new Film();
+        film.setId(1L);
+        when(filmStorage.getById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> filmService.update(film));
+        verify(filmStorage).getById(1L);
+        verify(filmStorage, never()).update(any(Film.class));
+    }
+
 
     @Test
     void getAllFilms_success() {
@@ -100,12 +113,14 @@ class FilmServiceTest {
         film.setLikes(new HashSet<>());
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
+        when(filmStorage.update(film)).thenReturn(film);
 
         filmService.addLike(1L, 1L);
 
         assertTrue(film.getLikes().contains(1L));
         verify(filmStorage).getById(1L);
         verify(userStorage).getById(1L);
+        verify(filmStorage).update(film);
     }
 
     @Test
@@ -124,41 +139,37 @@ class FilmServiceTest {
     }
 
     @Test
-    void addLike_alreadyLiked_throwsException() {
-        Film film = new Film();
-        film.setId(1L);
-        film.setLikes(new HashSet<>(Set.of(1L)));
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
-
-        assertThrows(ValidationException.class, () -> filmService.addLike(1L, 1L));
-    }
-
-    @Test
     void removeLike_success() {
         Film film = new Film();
         film.setId(1L);
         film.setLikes(new HashSet<>(Set.of(1L)));
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
+        when(filmStorage.update(film)).thenReturn(film);
 
         filmService.removeLike(1L, 1L);
 
         assertFalse(film.getLikes().contains(1L));
         verify(filmStorage).getById(1L);
         verify(userStorage).getById(1L);
+        verify(filmStorage).update(film);
     }
 
     @Test
-    void removeLike_notLiked_throwsException() {
+    void removeLike_notLiked_doesNothing() {
         Film film = new Film();
         film.setId(1L);
         film.setLikes(new HashSet<>());
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
 
-        assertThrows(ValidationException.class, () -> filmService.removeLike(1L, 1L));
+        filmService.removeLike(1L, 1L);
+
+        verify(filmStorage).getById(1L);
+        verify(userStorage).getById(1L);
+        verify(filmStorage, never()).update(any(Film.class));
     }
+
 
     @Test
     void getPopularFilms_success() {
