@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -137,7 +138,7 @@ class UserServiceTest {
     }
 
     @Test
-    void removeFriend_notFriend_doesNothing() {
+    void removeFriend_notFriend_throwsException() {
         User user1 = new User();
         user1.setId(1L);
         user1.setFriends(new HashSet<>());
@@ -146,7 +147,7 @@ class UserServiceTest {
         when(userStorage.getById(1L)).thenReturn(Optional.of(user1));
         when(userStorage.getById(2L)).thenReturn(Optional.of(user2));
 
-        userService.removeFriend(1L, 2L);
+        assertThrows(ValidationException.class, () -> userService.removeFriend(1L, 2L));
 
         verify(userStorage).getById(1L);
         verify(userStorage).getById(2L);
