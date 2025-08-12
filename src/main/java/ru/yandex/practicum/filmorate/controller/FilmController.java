@@ -1,54 +1,57 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/films")
-@Slf4j
 public class FilmController {
-    private final Map<Integer, Film> films = new HashMap<>();
-    private int nextId = 1;
+    private final FilmService filmService;
+
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
 
     @PostMapping
-    public Film addFilm(@Valid @RequestBody Film film) {
-        validateReleaseDate(film);
-        film.setId(nextId++);
-        films.put(film.getId(), film);
-        log.info("Добавлен фильм: {}", film.getName());
-        return film;
+    public Film create(@Valid @RequestBody Film film) {
+        return filmService.create(film);
     }
 
     @PutMapping
-    public Film updateFilm(@Valid @RequestBody Film film) {
-        if (film.getId() == 0 || !films.containsKey(film.getId())) {
-            log.error("Фильм с ID {} не найден", film.getId());
-            throw new ValidationException("Фильм не найден");
-        }
-        validateReleaseDate(film);
-        films.put(film.getId(), film);
-        log.info("Обновлён фильм: {}", film.getName());
-        return film;
+    public Film update(@Valid @RequestBody Film film) {
+        return filmService.update(film);
     }
 
     @GetMapping
-    public Collection<Film> getAllFilms() {
-        return films.values();
+    public List<Film> getAll() {
+        return filmService.getAll();
     }
 
-    private void validateReleaseDate(Film film) {
-        LocalDate minDate = LocalDate.of(1895, 12, 28);
-        if (film.getReleaseDate().isBefore(minDate)) {
-            log.error("Некорректная дата релиза: {}", film.getReleaseDate());
-            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
-        }
+    @GetMapping("/{id}")
+    public Film getById(@PathVariable Long id) {
+        return filmService.getById(id);
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public void addLike(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.addLike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public void removeLike(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.removeLike(id, userId);
+    }
+
+    @GetMapping("/popular")
+    public List<Film> getPopularFilms(
+            @RequestParam(defaultValue = "10") int count
+    ) {
+        return filmService.getPopularFilms(count);
     }
 }
