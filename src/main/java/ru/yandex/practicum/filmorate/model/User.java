@@ -28,10 +28,7 @@ public class User {
     private Set<Long> friends = new HashSet<>();
 
     public String getName() {
-        if (name == null || name.isBlank()) {
-            return login;
-        }
-        return name;
+        return (name == null || name.isBlank()) ? login : name;
     }
 
     public void addFriend(Long friendId) {
