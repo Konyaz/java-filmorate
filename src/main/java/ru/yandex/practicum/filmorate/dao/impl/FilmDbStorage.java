@@ -17,9 +17,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Repository("filmDbStorage")
 public class FilmDbStorage implements FilmStorage {
@@ -152,6 +150,14 @@ public class FilmDbStorage implements FilmStorage {
                     film.getId()
             );
             film.setGenres(genres);
+
+            // Лайки
+            Set<Long> likes = new HashSet<>(jdbcTemplate.queryForList(
+                    "SELECT user_id FROM likes WHERE film_id = ?",
+                    Long.class,
+                    film.getId()
+            ));
+            film.setLikes(likes);
 
             return film;
         }
