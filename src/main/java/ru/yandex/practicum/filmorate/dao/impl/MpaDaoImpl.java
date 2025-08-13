@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -10,7 +11,6 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public class MpaDaoImpl implements MpaDao {
@@ -22,14 +22,17 @@ public class MpaDaoImpl implements MpaDao {
     }
 
     @Override
-    public Optional<Mpa> getById(Integer id) {
+    public Mpa getMpaById(int id) {
         String sql = "SELECT * FROM mpa_ratings WHERE id = ?";
-        List<Mpa> mpas = jdbcTemplate.query(sql, new MpaRowMapper(), id);
-        return mpas.isEmpty() ? Optional.empty() : Optional.of(mpas.get(0));
+        try {
+            return jdbcTemplate.queryForObject(sql, new MpaRowMapper(), id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new EmptyResultDataAccessException("MPA рейтинг с ID " + id + " не найден", 1);
+        }
     }
 
     @Override
-    public List<Mpa> getAll() {
+    public List<Mpa> getAllMpa() {
         String sql = "SELECT * FROM mpa_ratings";
         return jdbcTemplate.query(sql, new MpaRowMapper());
     }

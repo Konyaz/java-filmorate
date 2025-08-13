@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -10,7 +11,6 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public class GenreDaoImpl implements GenreDao {
@@ -22,14 +22,17 @@ public class GenreDaoImpl implements GenreDao {
     }
 
     @Override
-    public Optional<Genre> getById(Integer id) {
+    public Genre getGenreById(int id) {
         String sql = "SELECT * FROM genres WHERE id = ?";
-        List<Genre> genres = jdbcTemplate.query(sql, new GenreRowMapper(), id);
-        return genres.isEmpty() ? Optional.empty() : Optional.of(genres.get(0));
+        try {
+            return jdbcTemplate.queryForObject(sql, new GenreRowMapper(), id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new EmptyResultDataAccessException("Жанр с ID " + id + " не найден", 1);
+        }
     }
 
     @Override
-    public List<Genre> getAll() {
+    public List<Genre> getAllGenres() {
         String sql = "SELECT * FROM genres";
         return jdbcTemplate.query(sql, new GenreRowMapper());
     }

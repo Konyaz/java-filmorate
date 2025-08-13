@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.dao.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -38,14 +39,20 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film create(Film film) {
         // Проверяем существование MPA
-        mpaDao.getById(film.getMpa().getId())
-                .orElseThrow(() -> new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден"));
+        try {
+            mpaDao.getMpaById(film.getMpa().getId());
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден");
+        }
 
         // Проверяем существование жанров
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             for (Genre genre : film.getGenres()) {
-                genreDao.getById(genre.getId())
-                        .orElseThrow(() -> new NotFoundException("Жанр с ID " + genre.getId() + " не найден"));
+                try {
+                    genreDao.getGenreById(genre.getId());
+                } catch (EmptyResultDataAccessException e) {
+                    throw new NotFoundException("Жанр с ID " + genre.getId() + " не найден");
+                }
             }
         }
 
@@ -75,7 +82,7 @@ public class FilmDbStorage implements FilmStorage {
                         film.getId(), genre.getId()
                 );
             }
-            film.setGenres(new ArrayList<>(uniqueGenres)); // Обновляем жанры в объекте
+            film.setGenres(new ArrayList<>(uniqueGenres));
         }
 
         return film;
@@ -91,14 +98,20 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         // Проверяем существование MPA
-        mpaDao.getById(film.getMpa().getId())
-                .orElseThrow(() -> new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден"));
+        try {
+            mpaDao.getMpaById(film.getMpa().getId());
+        } catch (EmptyResultDataAccessException e) {
+            throw new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден");
+        }
 
         // Проверяем существование жанров
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             for (Genre genre : film.getGenres()) {
-                genreDao.getById(genre.getId())
-                        .orElseThrow(() -> new NotFoundException("Жанр с ID " + genre.getId() + " не найден"));
+                try {
+                    genreDao.getGenreById(genre.getId());
+                } catch (EmptyResultDataAccessException e) {
+                    throw new NotFoundException("Жанр с ID " + genre.getId() + " не найден");
+                }
             }
         }
 
@@ -125,7 +138,7 @@ public class FilmDbStorage implements FilmStorage {
                         film.getId(), genre.getId()
                 );
             }
-            film.setGenres(new ArrayList<>(uniqueGenres)); // Обновляем жанры в объекте
+            film.setGenres(new ArrayList<>(uniqueGenres));
         }
 
         return film;
