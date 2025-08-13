@@ -48,7 +48,10 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User update(User user) {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
-        jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(), user.getBirthday(), user.getId());
+        int rowsAffected = jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(), user.getBirthday(), user.getId());
+        if (rowsAffected == 0) {
+            throw new org.springframework.dao.EmptyResultDataAccessException("Пользователь с ID " + user.getId() + " не найден", 1);
+        }
         return user;
     }
 
