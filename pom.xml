@@ -4,11 +4,12 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<!-- Родительский проект Spring Boot для управления версиями зависимостей -->
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.2.4</version>
-		<relativePath/>
+		<relativePath/> <!-- Поиск родителя в локальном репозитории, а не в удаленном -->
 	</parent>
 
 	<groupId>ru.yandex.practicum</groupId>
@@ -17,55 +18,132 @@
 	<name>filmorate</name>
 	<description>Film recommendation service</description>
 
+	<!-- Свойства проекта -->
 	<properties>
+		<!-- Версия Java -->
 		<java.version>17</java.version>
+
+		<!-- Версия Lombok -->
 		<lombok.version>1.18.30</lombok.version>
+
+		<!-- Версия Logbook -->
 		<logbook.version>2.16.0</logbook.version>
 	</properties>
 
+	<!-- Зависимости проекта -->
 	<dependencies>
+		<!-- Spring Boot Web для создания RESTful веб-сервисов -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!-- Валидация данных (аннотации @Valid и др.) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
+		<!-- Spring JDBC для работы с базами данных -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+
+		<!-- Встраиваемая база данных H2 для разработки и тестирования -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope> <!-- Требуется только во время выполнения -->
+		</dependency>
+
+		<!-- Lombok для автоматической генерации кода (геттеры, сеттеры и др.) -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<version>${lombok.version}</version>
-			<scope>provided</scope>
+			<scope>provided</scope> <!-- Не включается в итоговый jar -->
 		</dependency>
 
+		<!-- Logbook для логирования HTTP-запросов и ответов -->
 		<dependency>
 			<groupId>org.zalando</groupId>
 			<artifactId>logbook-spring-boot-starter</artifactId>
 			<version>${logbook.version}</version>
 		</dependency>
 
+		<!-- Тестирование: базовые зависимости Spring Boot Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope> <!-- Только для тестов -->
+		</dependency>
+
+		<!-- JUnit 5 API для написания тестов -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- JUnit 5 Engine для выполнения тестов -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
+	<!-- Сборка проекта -->
 	<build>
 		<plugins>
+			<!-- Плагин Spring Boot для создания исполняемых jar-файлов -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<excludes>
+						<!-- Исключаем Lombok из финального jar -->
 						<exclude>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+				</configuration>
+			</plugin>
+
+			<!-- Плагин компилятора для настройки параметров компиляции -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.11.0</version>
+				<configuration>
+					<!-- Указываем версию Java -->
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+
+					<!-- Настройка обработки аннотаций Lombok -->
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+
+			<!-- Плагин для выполнения тестов -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.2</version>
+				<configuration>
+					<!-- Включаем все тестовые классы -->
+					<includes>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+					</includes>
 				</configuration>
 			</plugin>
 		</plugins>

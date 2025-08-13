@@ -4,8 +4,6 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
 public class User {
@@ -25,8 +23,6 @@ public class User {
     @NotNull(message = "Дата рождения обязательна")
     private LocalDate birthday;
 
-    private Set<Long> friends = new HashSet<>();
-
     // Переопределенный сеттер для name
     public void setName(String name) {
         if (name == null || name.isBlank()) {
@@ -34,13 +30,5 @@ public class User {
         } else {
             this.name = name;
         }
-    }
-
-    public void addFriend(Long friendId) {
-        friends.add(friendId);
-    }
-
-    public void removeFriend(Long friendId) {
-        friends.remove(friendId);
     }
 }

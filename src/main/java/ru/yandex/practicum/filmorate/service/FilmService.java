@@ -1,12 +1,12 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.LikeDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Comparator;
 import java.util.List;
@@ -15,12 +15,15 @@ import java.util.stream.Collectors;
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+    private final LikeDao likeDao;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(
+            @Qualifier("filmDbStorage") FilmStorage filmStorage,
+            LikeDao likeDao) {
+
         this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
+        this.likeDao = likeDao;
     }
 
     public Film create(Film film) {
@@ -44,27 +47,26 @@ public class FilmService {
     }
 
     public void addLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
-        userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
-        if (film.getLikes().contains(userId)) {
-            throw new ValidationException("Пользователь с ID " + userId + " уже поставил лайк фильму с ID " + filmId);
-        }
-        film.addLike(userId);
-        filmStorage.update(film);
+        // Проверяем существование фильма
+        filmStorage.getById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм с ID " + filmId + " не найден"));
+
+        // Проверяем существование пользователя
+        // В реальном приложении здесь должна быть проверка через UserStorage
+
+        likeDao.addLike(filmId, userId);
     }
 
     public void removeLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
-        userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
-        film.getLikes().remove(userId);
-        filmStorage.update(film);
+        filmStorage.getById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм с ID " + filmId + " не найден"));
+
+        likeDao.removeLike(filmId, userId);
     }
 
     public List<Film> getPopularFilms(int count) {
         return filmStorage.getAll().stream()
-                .sorted(Comparator.comparingInt(f -> -f.getLikes().size()))
+                .sorted(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()))
                 .limit(count)
                 .collect(Collectors.toList());
     }

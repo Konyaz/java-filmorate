@@ -4,8 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 @Data
 public class Film {
@@ -23,18 +22,11 @@ public class Film {
     @Positive(message = "Длительность должна быть положительной")
     private int duration;
 
-    private Set<Long> likes = new HashSet<>();
+    private Mpa mpa;
+    private List<Genre> genres;
 
     @AssertTrue(message = "Дата релиза должна быть не ранее 28 декабря 1895 года")
     private boolean isValidReleaseDate() {
         return releaseDate != null && !releaseDate.isBefore(LocalDate.of(1895, 12, 28));
-    }
-
-    public void addLike(Long userId) {
-        likes.add(userId);
-    }
-
-    public void removeLike(Long userId) {
-        likes.remove(userId);
     }
 }

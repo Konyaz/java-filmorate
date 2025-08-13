@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.FriendDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -13,10 +15,15 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final FriendDao friendDao;
 
     @Autowired
-    public UserService(UserStorage userStorage) {
+    public UserService(
+            @Qualifier("userDbStorage") UserStorage userStorage,
+            FriendDao friendDao) {
+
         this.userStorage = userStorage;
+        this.friendDao = friendDao;
     }
 
     public User create(User user) {
@@ -40,40 +47,47 @@ public class UserService {
     }
 
     public void addFriend(Long id, Long friendId) {
+        // Проверяем существование пользователей
         User user = getById(id);
         User friend = getById(friendId);
-        if (user.getFriends().contains(friendId)) {
+
+        // Проверяем, что пользователи не пытаются добавить сами себя
+        if (id.equals(friendId)) {
+            throw new ValidationException("Пользователь не может добавить самого себя в друзья");
+        }
+
+        // Проверяем, не добавлен ли уже друг
+        if (friendDao.getFriends(id).contains(friendId)) {
             throw new ValidationException("Пользователь с ID " + friendId + " уже добавлен в друзья");
         }
-        // Двусторонняя дружба, как ожидается в sprint.json
-        user.addFriend(friendId);
-        friend.addFriend(id);
-        userStorage.update(user);
-        userStorage.update(friend);
+
+        friendDao.addFriend(id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        // Двусторонняя дружба: удаляем обоих пользователей друг у друга
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(id);
-        userStorage.update(user);
-        userStorage.update(friend);
+        getById(id); // Проверка существования пользователя
+        getById(friendId); // Проверка существования друга
+
+        // Проверяем, существует ли дружба
+        if (!friendDao.getFriends(id).contains(friendId)) {
+            throw new ValidationException("Пользователь с ID " + friendId + " не найден в друзьях");
+        }
+
+        friendDao.removeFriend(id, friendId);
     }
 
     public List<User> getFriends(Long id) {
-        User user = getById(id);
-        return user.getFriends().stream()
+        getById(id); // Проверка существования пользователя
+        return friendDao.getFriends(id).stream()
                 .map(this::getById)
                 .collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
-        User user = getById(id);
-        User other = getById(otherId);
-        return user.getFriends().stream()
-                .filter(friendId -> other.getFriends().contains(friendId))
+        getById(id); // Проверка существования пользователей
+        getById(otherId);
+
+        return friendDao.getCommonFriends(id, otherId).stream()
                 .map(this::getById)
                 .collect(Collectors.toList());
     }
