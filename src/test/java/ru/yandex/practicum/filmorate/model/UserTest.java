@@ -58,19 +58,6 @@ class UserTest {
     }
 
     @Test
-    void shouldFailWhenLoginContainsSpaces() {
-        User user = new User();
-        user.setEmail("valid@email.com");
-        user.setLogin("invalid login");
-        user.setBirthday(LocalDate.of(2000, 1, 1));
-
-        Set<ConstraintViolation<User>> violations = validator.validate(user);
-        assertFalse(violations.isEmpty(), "Логин с пробелами должен вызывать ошибку");
-        assertEquals(1, violations.size());
-        assertEquals("Логин не может содержать пробелы", violations.iterator().next().getMessage());
-    }
-
-    @Test
     void shouldFailWhenBirthdayInFuture() {
         User user = new User();
         user.setEmail("valid@email.com");

@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.dao.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -50,6 +51,13 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
+        // Проверяем существование пользователя
+        String checkSql = "SELECT COUNT(*) FROM users WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, user.getId());
+        if (count == null || count == 0) {
+            throw new EmptyResultDataAccessException("Пользователь с ID " + user.getId() + " не найден", 1);
+        }
+
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
 
         jdbcTemplate.update(
