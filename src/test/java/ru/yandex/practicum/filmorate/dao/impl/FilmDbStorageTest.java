@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
+import ru.yandex.practicum.filmorate.dao.MpaDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -29,19 +30,22 @@ class FilmDbStorageTest {
     @Autowired
     private FilmDbStorage filmStorage;
 
+    @Autowired
+    private MpaDao mpaDao;
+
     private Film testFilm;
 
     @BeforeEach
     void setUp() {
+        Mpa mpa = new Mpa();
+        mpa.setName("G");
+        mpa = mpaDao.create(mpa);
+
         testFilm = new Film();
         testFilm.setName("Test Film");
         testFilm.setDescription("Test Description");
         testFilm.setReleaseDate(LocalDate.of(2000, 1, 1));
         testFilm.setDuration(120);
-
-        Mpa mpa = new Mpa();
-        mpa.setId(1L);
-        mpa.setName("G");
         testFilm.setMpa(mpa);
     }
 
@@ -74,14 +78,15 @@ class FilmDbStorageTest {
     void testGetAllFilms() {
         filmStorage.create(testFilm);
 
+        Mpa mpa = new Mpa();
+        mpa.setName("PG");
+        mpa = mpaDao.create(mpa);
+
         Film anotherFilm = new Film();
         anotherFilm.setName("Another Film");
+        anotherFilm.setDescription("Another Description");
         anotherFilm.setReleaseDate(LocalDate.of(2010, 1, 1));
         anotherFilm.setDuration(100);
-
-        Mpa mpa = new Mpa();
-        mpa.setId(2L);
-        mpa.setName("PG");
         anotherFilm.setMpa(mpa);
 
         filmStorage.create(anotherFilm);

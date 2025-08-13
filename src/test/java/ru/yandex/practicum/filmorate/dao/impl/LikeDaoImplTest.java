@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
+import ru.yandex.practicum.filmorate.dao.MpaDao;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
@@ -33,20 +34,23 @@ class LikeDaoImplTest {
     @Autowired
     private UserDbStorage userStorage;
 
+    @Autowired
+    private MpaDao mpaDao;
+
     private Long filmId;
     private Long userId1;
     private Long userId2;
 
     @BeforeEach
     void setUp() {
+        Mpa mpa = new Mpa();
+        mpa.setName("G");
+        mpa = mpaDao.create(mpa);
+
         Film film = new Film();
         film.setName("Test Film");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
-
-        Mpa mpa = new Mpa();
-        mpa.setId(1L);
-        mpa.setName("G");
         film.setMpa(mpa);
 
         Film createdFilm = filmStorage.create(film);
