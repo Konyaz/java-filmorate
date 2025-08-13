@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.dao.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -33,9 +32,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User create(User user) {
         String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
-
         KeyHolder keyHolder = new GeneratedKeyHolder();
-
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setString(1, user.getEmail());
@@ -44,30 +41,14 @@ public class UserDbStorage implements UserStorage {
             ps.setDate(4, Date.valueOf(user.getBirthday()));
             return ps;
         }, keyHolder);
-
         user.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
         return user;
     }
 
     @Override
     public User update(User user) {
-        String checkSql = "SELECT COUNT(*) FROM users WHERE id = ?";
-        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, user.getId());
-        if (count == null || count == 0) {
-            throw new EmptyResultDataAccessException("Пользователь с ID " + user.getId() + " не найден", 1);
-        }
-
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
-
-        jdbcTemplate.update(
-                sql,
-                user.getEmail(),
-                user.getLogin(),
-                user.getName(),
-                user.getBirthday(),
-                user.getId()
-        );
-
+        jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(), user.getBirthday(), user.getId());
         return user;
     }
 
@@ -85,32 +66,31 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public void addFriend(Long userId, Long friendId) {
+    public void addFriend(Long id, Long friendId) {
         String sql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql, userId, friendId);
-        jdbcTemplate.update(sql, friendId, userId); // Взаимная дружба
+        jdbcTemplate.update(sql, id, friendId);
     }
 
     @Override
-    public void removeFriend(Long userId, Long friendId) {
+    public void removeFriend(Long id, Long friendId) {
         String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-        jdbcTemplate.update(sql, userId, friendId);
-        jdbcTemplate.update(sql, friendId, userId); // Удаление взаимной дружбы
+        jdbcTemplate.update(sql, id, friendId);
     }
 
     @Override
-    public List<User> getFriends(Long userId) {
+    public List<User> getFriends(Long id) {
         String sql = "SELECT u.* FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = ?";
-        return jdbcTemplate.query(sql, new UserRowMapper(), userId);
+        return jdbcTemplate.query(sql, new UserRowMapper(), id);
     }
 
     @Override
-    public List<User> getCommonFriends(Long userId, Long otherUserId) {
+    public List<User> getCommonFriends(Long id, Long otherId) {
         String sql = "SELECT u.* FROM users u " +
-                "JOIN friends f1 ON u.id = f1.friend_id " +
-                "JOIN friends f2 ON u.id = f2.friend_id " +
-                "WHERE f1.user_id = ? AND f2.user_id = ?";
-        return jdbcTemplate.query(sql, new UserRowMapper(), userId, otherUserId);
+                "WHERE u.id IN (" +
+                "SELECT f1.friend_id FROM friends f1 WHERE f1.user_id = ? " +
+                "INTERSECT " +
+                "SELECT f2.friend_id FROM friends f2 WHERE f2.user_id = ?)";
+        return jdbcTemplate.query(sql, new UserRowMapper(), id, otherId);
     }
 
     private class UserRowMapper implements RowMapper<User> {
@@ -122,15 +102,10 @@ public class UserDbStorage implements UserStorage {
             user.setLogin(rs.getString("login"));
             user.setName(rs.getString("name"));
             user.setBirthday(rs.getDate("birthday").toLocalDate());
-
-            // Друзья
-            List<Long> friends = jdbcTemplate.queryForList(
-                    "SELECT friend_id FROM friends WHERE user_id = ?",
-                    Long.class,
-                    user.getId()
-            );
-            user.setFriends(new HashSet<>(friends));
-
+            // Загружаем друзей
+            String friendsSql = "SELECT friend_id FROM friends WHERE user_id = ?";
+            List<Long> friendIds = jdbcTemplate.queryForList(friendsSql, Long.class, user.getId());
+            user.setFriends(new HashSet<>(friendIds));
             return user;
         }
     }

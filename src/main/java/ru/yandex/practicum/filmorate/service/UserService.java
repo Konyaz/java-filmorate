@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -39,15 +40,24 @@ public class UserService {
     }
 
     public void addFriend(Long id, Long friendId) {
-        getById(id); // Проверка существования пользователя
+        User user = getById(id); // Проверка существования пользователя
         getById(friendId); // Проверка существования друга
-        userStorage.addFriend(id, friendId); // Дружба добавляется в UserDbStorage (взаимная)
+        userStorage.addFriend(id, friendId); // Добавляем друга
+        if (user.getFriends() == null) {
+            user.setFriends(new HashSet<>());
+        }
+        user.getFriends().add(friendId);
+        userStorage.update(user); // Обновляем пользователя
     }
 
     public void removeFriend(Long id, Long friendId) {
-        getById(id); // Проверка существования пользователя
+        User user = getById(id); // Проверка существования пользователя
         getById(friendId); // Проверка существования друга
-        userStorage.removeFriend(id, friendId); // Удаление дружбы в UserDbStorage (взаимное)
+        if (user.getFriends() != null && user.getFriends().contains(friendId)) {
+            userStorage.removeFriend(id, friendId);
+            user.getFriends().remove(friendId);
+            userStorage.update(user);
+        }
     }
 
     public List<User> getFriends(Long id) {

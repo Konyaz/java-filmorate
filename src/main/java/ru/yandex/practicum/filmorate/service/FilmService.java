@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,15 +39,28 @@ public class FilmService {
     }
 
     public void addLike(Long filmId, Long userId) {
+        Film film = filmStorage.getById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм с id " + filmId + " не найден"));
         userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
         filmStorage.addLike(filmId, userId);
+        if (film.getLikes() == null) {
+            film.setLikes(new HashSet<>());
+        }
+        film.getLikes().add(userId);
+        filmStorage.update(film);
     }
 
     public void removeLike(Long filmId, Long userId) {
+        Film film = filmStorage.getById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм с id " + filmId + " не найден"));
         userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-        filmStorage.removeLike(filmId, userId);
+        if (film.getLikes() != null && film.getLikes().contains(userId)) {
+            filmStorage.removeLike(filmId, userId);
+            film.getLikes().remove(userId);
+            filmStorage.update(film);
+        }
     }
 
     public List<Film> getPopularFilms(int count) {

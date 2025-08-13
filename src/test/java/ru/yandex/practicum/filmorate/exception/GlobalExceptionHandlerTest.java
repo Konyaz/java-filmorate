@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import ru.yandex.practicum.filmorate.controller.GlobalExceptionHandler;
 import ru.yandex.practicum.filmorate.dto.ErrorResponse;
 
 import java.util.List;
