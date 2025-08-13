@@ -41,9 +41,9 @@ public class GenreDaoImpl implements GenreDao {
     }
 
     private Genre mapRowToGenre(ResultSet rs, int rowNum) throws SQLException {
-        return Genre.builder()
-                .id(rs.getLong("id"))
-                .name(rs.getString("name"))
-                .build();
+        Genre genre = new Genre();
+        genre.setId(rs.getLong("id"));
+        genre.setName(rs.getString("name"));
+        return genre;
     }
 }

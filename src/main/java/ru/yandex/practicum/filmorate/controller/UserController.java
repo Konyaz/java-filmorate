@@ -3,8 +3,10 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.dto.ErrorResponse;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -22,66 +24,59 @@ public class UserController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public User create(@Valid @RequestBody User user) {
         log.info("Получен запрос на создание пользователя: {}", user);
-        User created = userService.create(user);
-        log.info("Пользователь создан: {}", created);
-        return created;
+        return userService.create(user);
     }
 
     @PutMapping
     public User update(@Valid @RequestBody User user) {
         log.info("Получен запрос на обновление пользователя: {}", user);
-        User updated = userService.update(user);
-        log.info("Пользователь обновлен: {}", updated);
-        return updated;
+        return userService.update(user);
     }
 
     @GetMapping
     public List<User> getAll() {
         log.info("Получен запрос на получение всех пользователей");
-        List<User> users = userService.getAll();
-        log.info("Возвращено {} пользователей", users.size());
-        return users;
+        return userService.getAll();
     }
 
     @GetMapping("/{id}")
     public User getById(@PathVariable Long id) {
         log.info("Получен запрос на получение пользователя с ID: {}", id);
-        User user = userService.getById(id);
-        log.info("Найден пользователь: {}", user);
-        return user;
+        return userService.getById(id);
     }
 
     @PutMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Void> addFriend(@PathVariable Long id, @PathVariable Long friendId) {
+    @ResponseStatus(HttpStatus.OK)
+    public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("Получен запрос на добавление в друзья: пользователь ID={}, друг ID={}", id, friendId);
         userService.addFriend(id, friendId);
-        log.info("Пользователи добавлены в друзья: ID={} и ID={}", id, friendId);
-        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Void> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
+    @ResponseStatus(HttpStatus.OK)
+    public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("Получен запрос на удаление из друзей: пользователь ID={}, друг ID={}", id, friendId);
         userService.removeFriend(id, friendId);
-        log.info("Пользователи удалены из друзей: ID={} и ID={}", id, friendId);
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable Long id) {
         log.info("Получен запрос на получение друзей пользователя ID={}", id);
-        List<User> friends = userService.getFriends(id);
-        log.info("Возвращено {} друзей пользователя ID={}", friends.size(), id);
-        return friends;
+        return userService.getFriends(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
         log.info("Получен запрос на получение общих друзей пользователей ID={} и ID={}", id, otherId);
-        List<User> commonFriends = userService.getCommonFriends(id, otherId);
-        log.info("Возвращено {} общих друзей пользователей ID={} и ID={}", commonFriends.size(), id, otherId);
-        return commonFriends;
+        return userService.getCommonFriends(id, otherId);
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleNotFoundException(NotFoundException e) {
+        return new ErrorResponse(e.getMessage());
     }
 }
