@@ -45,7 +45,7 @@ public class User {
     }
 
     public String getName() {
-        return name;
+        return name == null || name.isBlank() ? login : name;
     }
 
     public void setName(String name) {

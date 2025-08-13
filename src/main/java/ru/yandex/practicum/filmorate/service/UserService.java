@@ -15,7 +15,7 @@ public class UserService {
     private final UserStorage userStorage;
 
     @Autowired
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) { // Укажем конкретный бин
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 
@@ -42,13 +42,15 @@ public class UserService {
     public void addFriend(Long id, Long friendId) {
         User user = getById(id);
         User friend = getById(friendId);
-        userStorage.addFriend(id, friendId);
+        user.addFriend(friendId);
+        userStorage.update(user);
     }
 
     public void removeFriend(Long id, Long friendId) {
         User user = getById(id);
         User friend = getById(friendId);
-        userStorage.removeFriend(id, friendId);
+        user.removeFriend(friendId);
+        userStorage.update(user);
     }
 
     public List<User> getFriends(Long id) {
