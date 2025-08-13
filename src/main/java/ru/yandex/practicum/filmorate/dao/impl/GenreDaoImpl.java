@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.GenreDao;
@@ -11,13 +11,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Repository
+@RequiredArgsConstructor
 public class GenreDaoImpl implements GenreDao {
     private final JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    public GenreDaoImpl(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
 
     @Override
     public List<Genre> getAllGenres() {
@@ -32,9 +28,6 @@ public class GenreDaoImpl implements GenreDao {
     }
 
     private Genre mapRowToGenre(ResultSet rs, int rowNum) throws SQLException {
-        Genre genre = new Genre();
-        genre.setId(rs.getInt("id"));
-        genre.setName(rs.getString("name"));
-        return genre;
+        return new Genre(rs.getInt("id"), rs.getString("name"));
     }
 }

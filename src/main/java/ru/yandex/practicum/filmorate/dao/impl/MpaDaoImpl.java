@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.MpaDao;
@@ -11,13 +11,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Repository
+@RequiredArgsConstructor
 public class MpaDaoImpl implements MpaDao {
     private final JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    public MpaDaoImpl(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
 
     @Override
     public List<Mpa> getAllMpa() {
@@ -32,9 +28,6 @@ public class MpaDaoImpl implements MpaDao {
     }
 
     private Mpa mapRowToMpa(ResultSet rs, int rowNum) throws SQLException {
-        Mpa mpa = new Mpa();
-        mpa.setId(rs.getInt("id"));
-        mpa.setName(rs.getString("name"));
-        return mpa;
+        return new Mpa(rs.getInt("id"), rs.getString("name"));
     }
 }

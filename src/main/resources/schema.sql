@@ -56,20 +56,3 @@ CREATE TABLE IF NOT EXISTS likes (
     FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
--- Начальные данные для таблицы mpa_ratings
-INSERT INTO mpa_ratings (id, name) VALUES
-(1, 'G'),
-(2, 'PG'),
-(3, 'PG-13'),
-(4, 'R'),
-(5, 'NC-17');
-
--- Начальные данные для таблицы genres
-INSERT INTO genres (id, name) VALUES
-(1, 'Комедия'),
-(2, 'Драма'),
-(3, 'Мультфильм'),
-(4, 'Триллер'),
-(5, 'Документальный'),
-(6, 'Боевик');

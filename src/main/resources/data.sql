@@ -1,11 +1,13 @@
-INSERT INTO mpa_ratings (id, name) VALUES
+-- Начальные данные для таблицы mpa_ratings с MERGE для избежания дубликатов
+MERGE INTO mpa_ratings KEY (id) VALUES
 (1, 'G'),
 (2, 'PG'),
 (3, 'PG-13'),
 (4, 'R'),
 (5, 'NC-17');
 
-INSERT INTO genres (id, name) VALUES
+-- Начальные данные для таблицы genres с MERGE для избежания дубликатов
+MERGE INTO genres KEY (id) VALUES
 (1, 'Комедия'),
 (2, 'Драма'),
 (3, 'Мультфильм'),
