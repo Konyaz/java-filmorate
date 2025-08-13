@@ -1,32 +1,36 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import org.springframework.context.annotation.Profile;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-@Profile("test")
 @Component
+@Slf4j
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
-    private long idCounter = 1;
+    private final AtomicLong idGenerator = new AtomicLong(0);
 
     @Override
     public User create(User user) {
-        user.setId(idCounter++);
+        if (user.getId() == null) {
+            user.setId(idGenerator.incrementAndGet());
+        }
         users.put(user.getId(), user);
+        log.info("Created user with ID: {}", user.getId());
         return user;
     }
 
     @Override
     public User update(User user) {
         if (!users.containsKey(user.getId())) {
-            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
+            throw new org.springframework.dao.EmptyResultDataAccessException("User with ID " + user.getId() + " not found", 1);
         }
         users.put(user.getId(), user);
+        log.info("Updated user with ID: {}", user.getId());
         return user;
     }
 
@@ -41,28 +45,34 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public void addFriend(Long userId, Long friendId) {
-        User user = users.get(userId);
-        if (user == null || users.get(friendId) == null) {
-            throw new NotFoundException("Пользователь не найден");
-        }
-        user.addFriend(friendId);
-    }
-
-    @Override
-    public void removeFriend(Long userId, Long friendId) {
-        User user = users.get(userId);
-        if (user == null || users.get(friendId) == null) {
-            throw new NotFoundException("Пользователь не найден");
-        }
-        user.removeFriend(friendId);
-    }
-
-    @Override
-    public List<User> getFriends(Long userId) {
-        User user = users.get(userId);
+    public void addFriend(Long id, Long friendId) {
+        User user = users.get(id);
         if (user == null) {
-            return Collections.emptyList();
+            throw new org.springframework.dao.EmptyResultDataAccessException("User with ID " + id + " not found", 1);
+        }
+        User friend = users.get(friendId);
+        if (friend == null) {
+            throw new org.springframework.dao.EmptyResultDataAccessException("Friend with ID " + friendId + " not found", 1);
+        }
+        user.addFriend(friendId); // Use the method from User class
+        log.info("Added friend with ID {} to user with ID {}", friendId, id);
+    }
+
+    @Override
+    public void removeFriend(Long id, Long friendId) {
+        User user = users.get(id);
+        if (user == null) {
+            throw new org.springframework.dao.EmptyResultDataAccessException("User with ID " + id + " not found", 1);
+        }
+        user.removeFriend(friendId); // Use the method from User class
+        log.info("Removed friend with ID {} from user with ID {}", friendId, id);
+    }
+
+    @Override
+    public List<User> getFriends(Long id) {
+        User user = users.get(id);
+        if (user == null) {
+            throw new org.springframework.dao.EmptyResultDataAccessException("User with ID " + id + " not found", 1);
         }
         return user.getFriends().stream()
                 .map(users::get)
@@ -71,17 +81,14 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public List<User> getCommonFriends(Long userId, Long otherUserId) {
-        User user1 = users.get(userId);
-        User user2 = users.get(otherUserId);
-
-        if (user1 == null || user2 == null) {
-            return Collections.emptyList();
+    public List<User> getCommonFriends(Long id, Long otherId) {
+        User user = users.get(id);
+        User otherUser = users.get(otherId);
+        if (user == null || otherUser == null) {
+            throw new org.springframework.dao.EmptyResultDataAccessException("User not found", 1);
         }
-
-        Set<Long> commonFriendIds = new HashSet<>(user1.getFriends());
-        commonFriendIds.retainAll(user2.getFriends());
-
+        Set<Long> commonFriendIds = new HashSet<>(user.getFriends());
+        commonFriendIds.retainAll(otherUser.getFriends());
         return commonFriendIds.stream()
                 .map(users::get)
                 .filter(Objects::nonNull)
