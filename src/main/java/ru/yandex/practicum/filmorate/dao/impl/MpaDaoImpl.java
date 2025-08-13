@@ -1,49 +1,55 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.MpaDao;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class MpaDaoImpl implements MpaDao {
     private final JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    public MpaDaoImpl(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    @Override
+    public List<Mpa> getAll() {
+        String sql = "SELECT * FROM mpa";
+        return jdbcTemplate.query(sql, this::mapRowToMpa);
     }
 
     @Override
-    public Mpa getMpaById(int id) {
-        String sql = "SELECT * FROM mpa_ratings WHERE id = ?";
-        try {
-            return jdbcTemplate.queryForObject(sql, new MpaRowMapper(), id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new EmptyResultDataAccessException("MPA рейтинг с ID " + id + " не найден", 1);
-        }
+    public Optional<Mpa> getById(Long id) {
+        String sql = "SELECT * FROM mpa WHERE id = ?";
+        List<Mpa> mpaList = jdbcTemplate.query(sql, this::mapRowToMpa, id);
+        return mpaList.isEmpty() ? Optional.empty() : Optional.of(mpaList.get(0));
     }
 
     @Override
-    public List<Mpa> getAllMpa() {
-        String sql = "SELECT * FROM mpa_ratings";
-        return jdbcTemplate.query(sql, new MpaRowMapper());
+    public Mpa create(Mpa mpa) {
+        String sql = "INSERT INTO mpa (name) VALUES (?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+            ps.setString(1, mpa.getName());
+            return ps;
+        }, keyHolder);
+        mpa.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return mpa;
     }
 
-    private class MpaRowMapper implements RowMapper<Mpa> {
-        @Override
-        public Mpa mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Mpa mpa = new Mpa();
-            mpa.setId(rs.getInt("id"));
-            mpa.setName(rs.getString("name"));
-            return mpa;
-        }
+    private Mpa mapRowToMpa(ResultSet rs, int rowNum) throws SQLException {
+        Mpa mpa = new Mpa();
+        mpa.setId(rs.getLong("id"));
+        mpa.setName(rs.getString("name"));
+        return mpa;
     }
 }

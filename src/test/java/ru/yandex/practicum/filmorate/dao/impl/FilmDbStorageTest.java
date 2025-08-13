@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Import({FilmDbStorage.class, GenreDaoImpl.class, MpaDaoImpl.class})
 @ActiveProfiles("test")
+@Sql(scripts = "classpath:schema.sql")
 class FilmDbStorageTest {
     @Autowired
     private FilmDbStorage filmStorage;
@@ -38,7 +40,8 @@ class FilmDbStorageTest {
         testFilm.setDuration(120);
 
         Mpa mpa = new Mpa();
-        mpa.setId(1);
+        mpa.setId(1L);
+        mpa.setName("G");
         testFilm.setMpa(mpa);
     }
 
@@ -77,7 +80,8 @@ class FilmDbStorageTest {
         anotherFilm.setDuration(100);
 
         Mpa mpa = new Mpa();
-        mpa.setId(2);
+        mpa.setId(2L);
+        mpa.setName("PG");
         anotherFilm.setMpa(mpa);
 
         filmStorage.create(anotherFilm);
