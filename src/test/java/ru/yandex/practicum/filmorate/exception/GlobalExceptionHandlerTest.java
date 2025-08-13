@@ -2,45 +2,47 @@ package ru.yandex.practicum.filmorate.exception;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import ru.yandex.practicum.filmorate.dto.ErrorResponse;
+import ru.yandex.practicum.filmorate.controller.TestController;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@WebMvcTest(controllers = {GlobalExceptionHandler.class, TestController.class})
 class GlobalExceptionHandlerTest {
     @Autowired
-    private GlobalExceptionHandler exceptionHandler;
+    private MockMvc mockMvc;
 
     @Test
-    void shouldHandleNotFoundException() {
-        NotFoundException ex = new NotFoundException("Фильм с ID 1 не найден");
-
-        ErrorResponse response = exceptionHandler.handleNotFoundException(ex);
-
-        assertEquals("Фильм с ID 1 не найден", response.getError());
-        assertNotNull(response.getTimestamp());
+    void shouldHandleNotFoundException() throws Exception {
+        mockMvc.perform(get("/test/notfound")
+                        .contentType("application/json"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Фильм с ID 1 не найден"))
+                .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
     @Test
-    void shouldHandleValidationException() {
-        ValidationException ex = new ValidationException("Пользователь уже поставил лайк");
-
-        ErrorResponse response = exceptionHandler.handleValidationException(ex);
-
-        assertEquals("Пользователь уже поставил лайк", response.getError());
-        assertNotNull(response.getTimestamp());
+    void shouldHandleValidationException() throws Exception {
+        mockMvc.perform(get("/test/validation")
+                        .contentType("application/json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Пользователь уже поставил лайк"))
+                .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
     @Test
@@ -51,6 +53,7 @@ class GlobalExceptionHandlerTest {
         when(ex.getBindingResult()).thenReturn(bindingResult);
         when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
 
+        GlobalExceptionHandler exceptionHandler = new GlobalExceptionHandler();
         Map<String, String> response = exceptionHandler.handleMethodArgumentNotValidException(ex);
 
         assertEquals("Название не может быть пустым", response.get("name"));
@@ -59,24 +62,24 @@ class GlobalExceptionHandlerTest {
     @Test
     void shouldHandleConstraintViolationException() {
         ConstraintViolation<?> violation = mock(ConstraintViolation.class);
-        jakarta.validation.Path path = mock(jakarta.validation.Path.class);
+        Path path = mock(Path.class);
         when(path.toString()).thenReturn("duration");
         when(violation.getPropertyPath()).thenReturn(path);
         when(violation.getMessage()).thenReturn("Продолжительность должна быть положительной");
         ConstraintViolationException ex = new ConstraintViolationException(Set.of(violation));
 
+        GlobalExceptionHandler exceptionHandler = new GlobalExceptionHandler();
         Map<String, String> response = exceptionHandler.handleConstraintViolationException(ex);
 
         assertEquals("Продолжительность должна быть положительной", response.get("duration"));
     }
 
     @Test
-    void shouldHandleOtherExceptions() {
-        Exception ex = new RuntimeException("Unexpected error");
-
-        ErrorResponse response = exceptionHandler.handleOtherExceptions(ex);
-
-        assertEquals("Внутренняя ошибка сервера", response.getError());
-        assertNotNull(response.getTimestamp());
+    void shouldHandleOtherExceptions() throws Exception {
+        mockMvc.perform(get("/test/other")
+                        .contentType("application/json"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Внутренняя ошибка сервера"))
+                .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 }

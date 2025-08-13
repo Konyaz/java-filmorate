@@ -40,34 +40,35 @@ public class UserService {
     }
 
     public void addFriend(Long id, Long friendId) {
-        User user = getById(id); // Проверка существования пользователя
-        getById(friendId); // Проверка существования друга
-        userStorage.addFriend(id, friendId); // Добавляем друга
+        User user = getById(id);
+        getById(friendId);
+        userStorage.addFriend(id, friendId);
         if (user.getFriends() == null) {
             user.setFriends(new HashSet<>());
         }
         user.getFriends().add(friendId);
-        userStorage.update(user); // Обновляем пользователя
+        userStorage.update(user);
     }
 
     public void removeFriend(Long id, Long friendId) {
-        User user = getById(id); // Проверка существования пользователя
-        getById(friendId); // Проверка существования друга
+        User user = getById(id);
+        getById(friendId);
         if (user.getFriends() != null && user.getFriends().contains(friendId)) {
             userStorage.removeFriend(id, friendId);
             user.getFriends().remove(friendId);
             userStorage.update(user);
         }
+        // Не вызываем update, если дружбы нет, чтобы пройти тест removeFriend_notFriend_doesNothing
     }
 
     public List<User> getFriends(Long id) {
-        getById(id); // Проверка существования пользователя
+        getById(id);
         return userStorage.getFriends(id);
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
-        getById(id); // Проверка существования пользователя
-        getById(otherId); // Проверка существования другого пользователя
+        getById(id);
+        getById(otherId);
         return userStorage.getCommonFriends(id, otherId);
     }
 }

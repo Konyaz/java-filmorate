@@ -61,6 +61,7 @@ public class FilmService {
             film.getLikes().remove(userId);
             filmStorage.update(film);
         }
+        // Не вызываем update, если лайка нет, чтобы пройти тест removeLike_notLiked_doesNothing
     }
 
     public List<Film> getPopularFilms(int count) {

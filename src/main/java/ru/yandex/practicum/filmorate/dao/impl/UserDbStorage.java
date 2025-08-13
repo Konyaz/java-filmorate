@@ -102,7 +102,6 @@ public class UserDbStorage implements UserStorage {
             user.setLogin(rs.getString("login"));
             user.setName(rs.getString("name"));
             user.setBirthday(rs.getDate("birthday").toLocalDate());
-            // Загружаем друзей
             String friendsSql = "SELECT friend_id FROM friends WHERE user_id = ?";
             List<Long> friendIds = jdbcTemplate.queryForList(friendsSql, Long.class, user.getId());
             user.setFriends(new HashSet<>(friendIds));
