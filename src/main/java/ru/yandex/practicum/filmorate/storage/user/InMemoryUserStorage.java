@@ -1,11 +1,15 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Profile("test")
+@Component
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
     private long idCounter = 1;
@@ -39,21 +43,19 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public void addFriend(Long userId, Long friendId) {
         User user = users.get(userId);
-        User friend = users.get(friendId);
-        if (user != null && friend != null) {
-            user.addFriend(friendId);
-            friend.addFriend(userId); // взаимная дружба
+        if (user == null || users.get(friendId) == null) {
+            throw new NotFoundException("Пользователь не найден");
         }
+        user.addFriend(friendId);
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
         User user = users.get(userId);
-        User friend = users.get(friendId);
-        if (user != null && friend != null) {
-            user.removeFriend(friendId);
-            friend.removeFriend(userId); // удаление взаимной дружбы
+        if (user == null || users.get(friendId) == null) {
+            throw new NotFoundException("Пользователь не найден");
         }
+        user.removeFriend(friendId);
     }
 
     @Override
