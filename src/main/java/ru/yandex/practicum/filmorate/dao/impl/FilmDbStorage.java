@@ -9,6 +9,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.GenreDao;
 import ru.yandex.practicum.filmorate.dao.MpaDao;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -71,7 +72,7 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? " +
                 "WHERE id = ?";
 
-        jdbcTemplate.update(
+        int rowsAffected = jdbcTemplate.update(
                 sql,
                 film.getName(),
                 film.getDescription(),
@@ -80,6 +81,10 @@ public class FilmDbStorage implements FilmStorage {
                 film.getMpa().getId(),
                 film.getId()
         );
+
+        if (rowsAffected == 0) {
+            throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
+        }
 
         // Обновляем жанры
         jdbcTemplate.update("DELETE FROM film_genre WHERE film_id = ?", film.getId());

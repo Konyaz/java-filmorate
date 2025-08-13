@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -53,7 +52,7 @@ public class UserDbStorage implements UserStorage {
     public User update(User user) {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
 
-        int rowsAffected = jdbcTemplate.update(
+        jdbcTemplate.update(
                 sql,
                 user.getEmail(),
                 user.getLogin(),
@@ -61,10 +60,6 @@ public class UserDbStorage implements UserStorage {
                 user.getBirthday(),
                 user.getId()
         );
-
-        if (rowsAffected == 0) {
-            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
-        }
 
         return user;
     }
