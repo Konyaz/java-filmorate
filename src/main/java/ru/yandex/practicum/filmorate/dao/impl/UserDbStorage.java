@@ -51,7 +51,6 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        // Проверяем существование пользователя
         String checkSql = "SELECT COUNT(*) FROM users WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, user.getId());
         if (count == null || count == 0) {
@@ -89,12 +88,14 @@ public class UserDbStorage implements UserStorage {
     public void addFriend(Long userId, Long friendId) {
         String sql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, userId, friendId);
+        jdbcTemplate.update(sql, friendId, userId); // Взаимная дружба
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
         String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
+        jdbcTemplate.update(sql, friendId, userId); // Удаление взаимной дружбы
     }
 
     @Override

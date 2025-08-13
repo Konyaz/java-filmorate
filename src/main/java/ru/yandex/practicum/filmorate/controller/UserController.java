@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
-import java.util.HashMap;
 import java.util.List;
 
 @Slf4j
@@ -55,19 +54,19 @@ public class UserController {
     }
 
     @PutMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Object> addFriend(@PathVariable Long id, @PathVariable Long friendId) {
+    public ResponseEntity<Void> addFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("Получен запрос на добавление в друзья: пользователь ID={}, друг ID={}", id, friendId);
         userService.addFriend(id, friendId);
         log.info("Пользователи добавлены в друзья: ID={} и ID={}", id, friendId);
-        return ResponseEntity.ok().body(new HashMap<>());
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Object> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
+    public ResponseEntity<Void> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("Получен запрос на удаление из друзей: пользователь ID={}, друг ID={}", id, friendId);
         userService.removeFriend(id, friendId);
         log.info("Пользователи удалены из друзей: ID={} и ID={}", id, friendId);
-        return ResponseEntity.ok().body(new HashMap<>());
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}/friends")

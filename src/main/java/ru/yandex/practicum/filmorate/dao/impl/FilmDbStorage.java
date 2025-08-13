@@ -37,6 +37,18 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film create(Film film) {
+        // Проверяем существование MPA
+        mpaDao.getById(film.getMpa().getId())
+                .orElseThrow(() -> new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден"));
+
+        // Проверяем существование жанров
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            for (Genre genre : film.getGenres()) {
+                genreDao.getById(genre.getId())
+                        .orElseThrow(() -> new NotFoundException("Жанр с ID " + genre.getId() + " не найден"));
+            }
+        }
+
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
                 "VALUES (?, ?, ?, ?, ?)";
 
@@ -54,14 +66,16 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
 
-        // Сохраняем жанры
-        if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
+        // Сохраняем жанры (без дубликатов)
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            Set<Genre> uniqueGenres = new HashSet<>(film.getGenres());
+            for (Genre genre : uniqueGenres) {
                 jdbcTemplate.update(
                         "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)",
                         film.getId(), genre.getId()
                 );
             }
+            film.setGenres(new ArrayList<>(uniqueGenres)); // Обновляем жанры в объекте
         }
 
         return film;
@@ -69,10 +83,29 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
+        // Проверяем существование фильма
+        String checkSql = "SELECT COUNT(*) FROM films WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, film.getId());
+        if (count == null || count == 0) {
+            throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
+        }
+
+        // Проверяем существование MPA
+        mpaDao.getById(film.getMpa().getId())
+                .orElseThrow(() -> new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден"));
+
+        // Проверяем существование жанров
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            for (Genre genre : film.getGenres()) {
+                genreDao.getById(genre.getId())
+                        .orElseThrow(() -> new NotFoundException("Жанр с ID " + genre.getId() + " не найден"));
+            }
+        }
+
         String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? " +
                 "WHERE id = ?";
 
-        int rowsAffected = jdbcTemplate.update(
+        jdbcTemplate.update(
                 sql,
                 film.getName(),
                 film.getDescription(),
@@ -82,19 +115,17 @@ public class FilmDbStorage implements FilmStorage {
                 film.getId()
         );
 
-        if (rowsAffected == 0) {
-            throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
-        }
-
-        // Обновляем жанры
+        // Обновляем жанры (без дубликатов)
         jdbcTemplate.update("DELETE FROM film_genre WHERE film_id = ?", film.getId());
-        if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            Set<Genre> uniqueGenres = new HashSet<>(film.getGenres());
+            for (Genre genre : uniqueGenres) {
                 jdbcTemplate.update(
                         "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)",
                         film.getId(), genre.getId()
                 );
             }
+            film.setGenres(new ArrayList<>(uniqueGenres)); // Обновляем жанры в объекте
         }
 
         return film;
@@ -145,9 +176,9 @@ public class FilmDbStorage implements FilmStorage {
             mpa.setName(rs.getString("mpa_name"));
             film.setMpa(mpa);
 
-            // Жанры
+            // Жанры (без дубликатов)
             List<Genre> genres = jdbcTemplate.query(
-                    "SELECT g.* FROM film_genre fg JOIN genres g ON fg.genre_id = g.id WHERE fg.film_id = ?",
+                    "SELECT DISTINCT g.* FROM film_genre fg JOIN genres g ON fg.genre_id = g.id WHERE fg.film_id = ?",
                     (rs1, rowNum1) -> {
                         Genre genre = new Genre();
                         genre.setId(rs1.getInt("id"));

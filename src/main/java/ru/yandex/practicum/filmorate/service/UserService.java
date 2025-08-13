@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -40,32 +39,25 @@ public class UserService {
     }
 
     public void addFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        user.addFriend(friendId);
-        userStorage.update(user);
+        getById(id); // Проверка существования пользователя
+        getById(friendId); // Проверка существования друга
+        userStorage.addFriend(id, friendId); // Дружба добавляется в UserDbStorage (взаимная)
     }
 
     public void removeFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        user.removeFriend(friendId);
-        userStorage.update(user);
+        getById(id); // Проверка существования пользователя
+        getById(friendId); // Проверка существования друга
+        userStorage.removeFriend(id, friendId); // Удаление дружбы в UserDbStorage (взаимное)
     }
 
     public List<User> getFriends(Long id) {
-        User user = getById(id);
-        return user.getFriends().stream()
-                .map(this::getById)
-                .collect(Collectors.toList());
+        getById(id); // Проверка существования пользователя
+        return userStorage.getFriends(id);
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
-        User user = getById(id);
-        User other = getById(otherId);
-        return user.getFriends().stream()
-                .filter(friendId -> other.getFriends().contains(friendId))
-                .map(this::getById)
-                .collect(Collectors.toList());
+        getById(id); // Проверка существования пользователя
+        getById(otherId); // Проверка существования другого пользователя
+        return userStorage.getCommonFriends(id, otherId);
     }
 }
