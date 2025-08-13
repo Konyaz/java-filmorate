@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.storage.user;
+package ru.yandex.practicum.filmorate.dao.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -8,6 +8,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.sql.PreparedStatement;
 import java.util.HashSet;
@@ -25,7 +26,7 @@ public class UserDbStorage implements UserStorage {
         String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"user_id"});
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setString(1, user.getEmail());
             ps.setString(2, user.getLogin());
             ps.setString(3, user.getName());
@@ -34,12 +35,13 @@ public class UserDbStorage implements UserStorage {
         }, keyHolder);
         Long id = keyHolder.getKey().longValue();
         user.setId(id);
+        updateFriends(user);
         return user;
     }
 
     @Override
     public User update(User user) {
-        String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE user_id = ?";
+        String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
         int rowsAffected = jdbcTemplate.update(sql,
                 user.getEmail(),
                 user.getLogin(),
@@ -49,13 +51,7 @@ public class UserDbStorage implements UserStorage {
         if (rowsAffected == 0) {
             throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");
         }
-        // Обновление друзей
-        String deleteFriendsSql = "DELETE FROM friends WHERE user_id = ?";
-        jdbcTemplate.update(deleteFriendsSql, user.getId());
-        String insertFriendsSql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
-        for (Long friendId : user.getFriends()) {
-            jdbcTemplate.update(insertFriendsSql, user.getId(), friendId);
-        }
+        updateFriends(user);
         return user;
     }
 
@@ -67,36 +63,37 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public Optional<User> getById(Long id) {
-        String sql = "SELECT * FROM users WHERE user_id = ?";
+        String sql = "SELECT * FROM users WHERE id = ?";
         List<User> users = jdbcTemplate.query(sql, userRowMapper(), id);
         return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
     }
 
-    public void addFriend(Long userId, Long friendId) {
-        String sql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql, userId, friendId);
-    }
-
-    public void removeFriend(Long userId, Long friendId) {
-        String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-        jdbcTemplate.update(sql, userId, friendId);
-    }
-
-    public Set<Long> getFriends(Long userId) {
-        String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
-        return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, userId));
+    private void updateFriends(User user) {
+        String deleteFriendsSql = "DELETE FROM friends WHERE user_id = ?";
+        jdbcTemplate.update(deleteFriendsSql, user.getId());
+        if (user.getFriends() != null && !user.getFriends().isEmpty()) {
+            String insertFriendsSql = "INSERT INTO friends (user_id, friend_id) VALUES (?, ?)";
+            for (Long friendId : user.getFriends()) {
+                jdbcTemplate.update(insertFriendsSql, user.getId(), friendId);
+            }
+        }
     }
 
     private RowMapper<User> userRowMapper() {
         return (rs, rowNum) -> {
             User user = new User();
-            user.setId(rs.getLong("user_id"));
+            user.setId(rs.getLong("id"));
             user.setEmail(rs.getString("email"));
             user.setLogin(rs.getString("login"));
             user.setName(rs.getString("name"));
             user.setBirthday(rs.getDate("birthday").toLocalDate());
-            user.setFriends(getFriends(rs.getLong("user_id")));
+            user.setFriends(getFriends(rs.getLong("id")));
             return user;
         };
+    }
+
+    private Set<Long> getFriends(Long userId) {
+        String sql = "SELECT friend_id FROM friends WHERE user_id = ?";
+        return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, userId));
     }
 }
