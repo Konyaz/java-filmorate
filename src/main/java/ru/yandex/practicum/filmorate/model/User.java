@@ -1,9 +1,15 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Past;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class User {
@@ -19,9 +25,11 @@ public class User {
 
     private String name;
 
-    @Past(message = "Дата рождения должна быть в прошлом")
+    @Past(message = " Pagination should be in the past")
     @NotNull(message = "Дата рождения обязательна")
     private LocalDate birthday;
+
+    private Set<Long> friends = new HashSet<>(); // Инициализация для хранения ID друзей
 
     // Переопределенный сеттер для name
     public void setName(String name) {

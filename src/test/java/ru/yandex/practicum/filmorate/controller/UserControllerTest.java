@@ -119,12 +119,17 @@ class UserControllerTest {
 
     @Test
     void getCommonFriends_success() throws Exception {
-        user1.setFriends(Set.of(2L));
-        user2.setFriends(Set.of(1L));
-        when(userService.getCommonFriends(1L, 2L)).thenReturn(List.of());
+        user1.setFriends(Set.of(3L));
+        user2.setFriends(Set.of(3L));
+        User commonFriend = new User();
+        commonFriend.setId(3L);
+        commonFriend.setEmail("user3@example.com");
+        commonFriend.setLogin("user3");
+        commonFriend.setBirthday(LocalDate.of(1992, 1, 1));
+        when(userService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));
 
         mockMvc.perform(get("/users/1/friends/common/2"))
                 .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(List.of())));
+                .andExpect(content().json(objectMapper.writeValueAsString(List.of(commonFriend))));
     }
 }

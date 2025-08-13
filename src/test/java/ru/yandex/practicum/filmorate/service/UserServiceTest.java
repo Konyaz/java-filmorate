@@ -114,8 +114,8 @@ class UserServiceTest {
         userService.addFriend(1L, 2L);
 
         assertTrue(user1.getFriends().contains(2L));
-        assertTrue(user2.getFriends().contains(1L));
-        verify(userStorage, times(2)).update(any(User.class));
+        assertFalse(user2.getFriends().contains(1L)); // Односторонняя дружба
+        verify(userStorage, times(1)).update(user1); // Обновляется только user1
     }
 
     @Test
@@ -125,15 +125,15 @@ class UserServiceTest {
         user1.setFriends(new HashSet<>(Set.of(2L)));
         User user2 = new User();
         user2.setId(2L);
-        user2.setFriends(new HashSet<>(Set.of(1L)));
+        user2.setFriends(new HashSet<>());
         when(userStorage.getById(1L)).thenReturn(Optional.of(user1));
         when(userStorage.getById(2L)).thenReturn(Optional.of(user2));
 
         userService.removeFriend(1L, 2L);
 
-        assertFalse(user1.getFriends().contains(2L));
-        assertFalse(user2.getFriends().contains(1L));
-        verify(userStorage, times(2)).update(any(User.class));
+        assertFalse(user1.getFriends().contains(2L)); // Исправлено: user1.getFriends()
+        assertFalse(user2.getFriends().contains(1L)); // Односторонняя дружба
+        verify(userStorage, times(1)).update(user1); // Обновляется только user1
     }
 
     @Test
@@ -143,6 +143,7 @@ class UserServiceTest {
         user1.setFriends(new HashSet<>());
         User user2 = new User();
         user2.setId(2L);
+        user2.setFriends(new HashSet<>());
         when(userStorage.getById(1L)).thenReturn(Optional.of(user1));
         when(userStorage.getById(2L)).thenReturn(Optional.of(user2));
 
@@ -150,7 +151,7 @@ class UserServiceTest {
 
         verify(userStorage).getById(1L);
         verify(userStorage).getById(2L);
-        verify(userStorage, times(2)).update(any(User.class));
+        verify(userStorage, times(1)).update(user1); // Обновляется user1, даже если список друзей пуст
     }
 
     @Test
