@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public class GenreDaoImpl implements GenreDao {
@@ -21,14 +20,13 @@ public class GenreDaoImpl implements GenreDao {
     }
 
     @Override
-    public Optional<Genre> getById(int id) {
+    public Genre getGenreById(int id) {
         String sql = "SELECT * FROM genres WHERE id = ?";
-        List<Genre> genres = jdbcTemplate.query(sql, this::mapRowToGenre, id);
-        return genres.isEmpty() ? Optional.empty() : Optional.of(genres.get(0));
+        return jdbcTemplate.queryForObject(sql, this::mapRowToGenre, id);
     }
 
     @Override
-    public List<Genre> getAll() {
+    public List<Genre> getAllGenres() {
         String sql = "SELECT * FROM genres";
         return jdbcTemplate.query(sql, this::mapRowToGenre);
     }

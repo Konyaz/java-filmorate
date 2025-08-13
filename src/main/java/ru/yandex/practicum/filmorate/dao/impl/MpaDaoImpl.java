@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public class MpaDaoImpl implements MpaDao {
@@ -21,14 +20,13 @@ public class MpaDaoImpl implements MpaDao {
     }
 
     @Override
-    public Optional<Mpa> getById(int id) {
+    public Mpa getMpaById(int id) {
         String sql = "SELECT * FROM mpa_ratings WHERE id = ?";
-        List<Mpa> mpas = jdbcTemplate.query(sql, this::mapRowToMpa, id);
-        return mpas.isEmpty() ? Optional.empty() : Optional.of(mpas.get(0));
+        return jdbcTemplate.queryForObject(sql, this::mapRowToMpa, id);
     }
 
     @Override
-    public List<Mpa> getAll() {
+    public List<Mpa> getAllMpa() {
         String sql = "SELECT * FROM mpa_ratings";
         return jdbcTemplate.query(sql, this::mapRowToMpa);
     }
