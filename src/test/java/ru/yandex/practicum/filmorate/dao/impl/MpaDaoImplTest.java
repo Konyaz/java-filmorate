@@ -4,7 +4,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
@@ -14,8 +16,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Import(MpaDaoImpl.class)
 @AutoConfigureTestDatabase
 @ActiveProfiles("test")
+@TestPropertySource(locations = "classpath:application-test.properties")
 @Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class MpaDaoImplTest {
     @Autowired

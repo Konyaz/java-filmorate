@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
@@ -52,8 +53,7 @@ public class UserDbStorage implements UserStorage {
                 user.getId());
 
         if (updated == 0) {
-            // Так ожидают твои тесты: EmptyResultDataAccessException
-            throw new EmptyResultDataAccessException("User not found: id=" + user.getId(), 1);
+            throw new NotFoundException("User not found: id=" + user.getId());
         }
         log.info("User updated id={}", user.getId());
         return user;
@@ -96,7 +96,6 @@ public class UserDbStorage implements UserStorage {
         }
     }
 
-    // Друзья вынесены в FriendDaoImpl
     @Override
     public void addFriend(Long id, Long friendId) {
         throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");

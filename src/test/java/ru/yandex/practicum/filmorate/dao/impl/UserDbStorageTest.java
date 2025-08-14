@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
@@ -18,10 +20,11 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Import(UserDbStorage.class)
 @AutoConfigureTestDatabase
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-@Sql(scripts = "classpath:schema.sql")
+@TestPropertySource(locations = "classpath:application-test.properties")
+@Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql", "classpath:test-data-genres.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class UserDbStorageTest {
     @Autowired
     private UserDbStorage userStorage;
@@ -79,7 +82,7 @@ class UserDbStorageTest {
     @Test
     void testUpdateNonExistentUser() {
         testUser.setId(999L);
-        assertThrows(org.springframework.dao.EmptyResultDataAccessException.class,
+        assertThrows(NotFoundException.class,
                 () -> userStorage.update(testUser));
     }
 

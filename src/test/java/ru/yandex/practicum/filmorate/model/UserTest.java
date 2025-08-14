@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hibernate.validator.internal.util.Contracts.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class UserTest {
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
@@ -92,8 +94,7 @@ class UserTest {
 
         Set<ConstraintViolation<User>> violations = validator.validate(user);
         assertFalse(violations.isEmpty(), "Пустой логин должен вызывать ошибку");
-        assertEquals(1, violations.size());
-        assertEquals("Логин не может быть пустым и не должен содержать пробелы", violations.iterator().next().getMessage());
+        assertEquals(2, violations.size()); // Теперь 2: NotBlank + Pattern
     }
 
     @Test

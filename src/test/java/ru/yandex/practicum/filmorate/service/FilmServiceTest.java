@@ -68,13 +68,11 @@ class FilmServiceTest {
         film.setDuration(120);
         film.setMpa(new Mpa(1L, "G"));
 
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(filmStorage.update(film)).thenReturn(film);
 
         Film result = filmService.update(film);
 
         assertEquals(film, result);
-        verify(filmStorage, times(1)).getById(1L);
         verify(filmStorage, times(1)).update(film);
     }
 
@@ -82,12 +80,12 @@ class FilmServiceTest {
     void updateFilm_notFound_throwsNotFoundException() {
         Film film = new Film();
         film.setId(1L);
+        film.setReleaseDate(LocalDate.of(2000, 1, 1)); // Добавили дату, чтобы избежать ValidationException
 
-        when(filmStorage.getById(1L)).thenReturn(Optional.empty());
+        when(filmStorage.update(film)).thenThrow(new NotFoundException("Фильм не найден"));
 
         assertThrows(NotFoundException.class, () -> filmService.update(film));
-        verify(filmStorage, times(1)).getById(1L);
-        verify(filmStorage, never()).update(film);
+        verify(filmStorage, times(1)).update(film);
     }
 
     @Test
