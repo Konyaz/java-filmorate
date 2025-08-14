@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -50,7 +51,8 @@ public class UserDbStorage implements UserStorage {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
         int rowsAffected = jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(), user.getBirthday(), user.getId());
         if (rowsAffected == 0) {
-            throw new org.springframework.dao.EmptyResultDataAccessException("Пользователь с ID " + user.getId() + " не найден", 1);
+            // Changed the thrown exception to match the test's expectation
+            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
         }
         return user;
     }

@@ -3,15 +3,14 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,33 +23,28 @@ public class UserService {
     }
 
     public User create(User user) {
-        // Проверка на null перед вызовом методов
-        if (user.getLogin() == null || user.getLogin().isBlank()) {
-            log.error("Логин пользователя не указан");
-            throw new ValidationException("Логин обязателен");
+        // Проверка на null и пробелы в логине
+        if (user.getLogin() == null || user.getLogin().contains(" ")) {
+            log.error("Логин не может быть пустым или содержать пробелы: {}", user.getLogin());
+            throw new ValidationException("Логин не может быть пустым и не должен содержать пробелы");
         }
-        if (user.getLogin().contains(" ")) {
-            log.error("Логин содержит пробелы: {}", user.getLogin());
-            throw new ValidationException("Логин не может содержать пробелы");
+        // Если имя не задано, используем логин
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
-        try {
-            log.info("Создание пользователя: {}", user);
-            return userStorage.create(user);
-        } catch (DataIntegrityViolationException e) {
-            log.error("Пользователь с email {} уже существует", user.getEmail());
-            throw new ValidationException("Пользователь с таким email уже существует");
-        }
+        log.info("Создание пользователя: {}", user);
+        return userStorage.create(user);
     }
 
     public User update(User user) {
-        // Проверка на null перед вызовом методов
-        if (user.getLogin() == null || user.getLogin().isBlank()) {
-            log.error("Логин пользователя не указан");
-            throw new ValidationException("Логин обязателен");
-        }
-        if (user.getLogin().contains(" ")) {
+        // Проверка на null и пробелы в логине
+        if (user.getLogin() != null && user.getLogin().contains(" ")) {
             log.error("Логин содержит пробелы: {}", user.getLogin());
             throw new ValidationException("Логин не может содержать пробелы");
+        }
+        // Если имя не задано, используем логин
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
         log.info("Обновление пользователя: {}", user);
         return userStorage.update(user);
@@ -70,42 +64,41 @@ public class UserService {
     public void addFriend(Long id, Long friendId) {
         User user = getById(id);
         User friend = getById(friendId);
-
-        // Инициализируем friends, если он null
-        if (user.getFriends() == null) {
-            user.setFriends(new HashSet<>());
-        }
-
+        // Убираем избыточную проверку на null, так как friends инициализирован в User.java
         if (user.getFriends().contains(friendId)) {
             log.warn("Пользователь {} уже является другом пользователя {}", friendId, id);
             throw new ValidationException("Пользователь с ID " + friendId + " уже является другом");
         }
-
         userStorage.addFriend(id, friendId);
+        user.getFriends().add(friendId);
+        userStorage.update(user);
     }
 
     public void removeFriend(Long id, Long friendId) {
         User user = getById(id);
-        User friend = getById(friendId);
-
-        // Инициализируем friends, если он null
-        if (user.getFriends() == null) {
-            user.setFriends(new HashSet<>());
-        }
-
+        getById(friendId);
+        // Убираем избыточную проверку на null, так как friends инициализирован в User.java
         if (user.getFriends().contains(friendId)) {
             userStorage.removeFriend(id, friendId);
+            user.getFriends().remove(friendId);
+            userStorage.update(user);
         }
     }
 
     public List<User> getFriends(Long id) {
-        getById(id); // Проверка существования пользователя
+        getById(id);
         return userStorage.getFriends(id);
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
-        getById(id); // Проверка существования пользователя 1
-        getById(otherId); // Проверка существования пользователя 2
-        return userStorage.getCommonFriends(id, otherId);
+        User user = getById(id);
+        User otherUser = getById(otherId);
+        log.info("Получение общих друзей для пользователей {} и {}", id, otherId);
+        return user.getFriends().stream()
+                .filter(otherUser.getFriends()::contains)
+                .map(userStorage::getById)
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .collect(Collectors.toList());
     }
 }

@@ -16,10 +16,12 @@ import java.util.Set;
 public class User {
     private Long id;
 
+    // Аннотация @NotBlank проверяет, что поле не пустое и не состоит из пробелов.
     @NotBlank(message = "Электронная почта не может быть пустой")
     @Email(message = "Электронная почта должна быть валидной")
     private String email;
 
+    // Аннотация @NotBlank обеспечивает, что логин не будет null, пустым или состоять только из пробелов.
     @NotBlank(message = "Логин не может быть пустым и не должен содержать пробелы")
     private String login;
 
@@ -32,6 +34,11 @@ public class User {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Set<Long> friends = new HashSet<>();
 
+    /**
+     * Возвращает имя пользователя. Если имя не указано (null или пустое), используется логин.
+     *
+     * @return имя пользователя или логин
+     */
     public String getName() {
         return (name == null || name.isBlank()) ? login : name;
     }
