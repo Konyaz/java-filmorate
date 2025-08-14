@@ -10,9 +10,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import ru.yandex.practicum.filmorate.controller.TestController;
+import ru.yandex.practicum.filmorate.dto.ErrorResponse;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,9 +54,9 @@ class GlobalExceptionHandlerTest {
         when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
 
         GlobalExceptionHandler exceptionHandler = new GlobalExceptionHandler();
-        Map<String, String> response = exceptionHandler.handleMethodArgumentNotValidException(ex);
+        ErrorResponse response = exceptionHandler.handleMethodArgumentNotValidException(ex);
 
-        assertEquals("Название не может быть пустым", response.get("name"));
+        assertEquals("name: Название не может быть пустым", response.getError());
     }
 
     @Test
@@ -69,9 +69,9 @@ class GlobalExceptionHandlerTest {
         ConstraintViolationException ex = new ConstraintViolationException(Set.of(violation));
 
         GlobalExceptionHandler exceptionHandler = new GlobalExceptionHandler();
-        Map<String, String> response = exceptionHandler.handleConstraintViolationException(ex);
+        ErrorResponse response = exceptionHandler.handleConstraintViolationException(ex);
 
-        assertEquals("Продолжительность должна быть положительной", response.get("duration"));
+        assertEquals("duration: Продолжительность должна быть положительной", response.getError());
     }
 
     @Test
