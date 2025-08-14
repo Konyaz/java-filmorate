@@ -24,7 +24,8 @@ public class UserService {
     }
 
     public User create(User user) {
-        if (user.getLogin() == null) {
+        // Проверка на null перед вызовом методов
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
             log.error("Логин пользователя не указан");
             throw new ValidationException("Логин обязателен");
         }
@@ -36,13 +37,14 @@ public class UserService {
             log.info("Создание пользователя: {}", user);
             return userStorage.create(user);
         } catch (DataIntegrityViolationException e) {
-            log.error("Ошибка при создании пользователя: дубликат email {}", user.getEmail(), e);
-            throw new ValidationException("Пользователь с email " + user.getEmail() + " уже существует");
+            log.error("Пользователь с email {} уже существует", user.getEmail());
+            throw new ValidationException("Пользователь с таким email уже существует");
         }
     }
 
     public User update(User user) {
-        if (user.getLogin() == null) {
+        // Проверка на null перед вызовом методов
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
             log.error("Логин пользователя не указан");
             throw new ValidationException("Логин обязателен");
         }
@@ -50,17 +52,8 @@ public class UserService {
             log.error("Логин содержит пробелы: {}", user.getLogin());
             throw new ValidationException("Логин не может содержать пробелы");
         }
-        if (userStorage.getById(user.getId()).isEmpty()) {
-            log.error("Пользователь с ID {} не найден", user.getId());
-            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
-        }
-        try {
-            log.info("Обновление пользователя: {}", user);
-            return userStorage.update(user);
-        } catch (DataIntegrityViolationException e) {
-            log.error("Ошибка при обновлении пользователя: дубликат email {}", user.getEmail(), e);
-            throw new ValidationException("Пользователь с email " + user.getEmail() + " уже существует");
-        }
+        log.info("Обновление пользователя: {}", user);
+        return userStorage.update(user);
     }
 
     public List<User> getAll() {
@@ -76,37 +69,43 @@ public class UserService {
 
     public void addFriend(Long id, Long friendId) {
         User user = getById(id);
-        getById(friendId);
-        if (user.getFriends() != null && user.getFriends().contains(friendId)) {
-            log.warn("Пользователь {} уже является другом пользователя {}", friendId, id);
-            throw new ValidationException("Пользователь с ID " + friendId + " уже является другом");
-        }
-        userStorage.addFriend(id, friendId);
+        User friend = getById(friendId);
+
+        // Инициализируем friends, если он null
         if (user.getFriends() == null) {
             user.setFriends(new HashSet<>());
         }
-        user.getFriends().add(friendId);
-        userStorage.update(user);
+
+        if (user.getFriends().contains(friendId)) {
+            log.warn("Пользователь {} уже является другом пользователя {}", friendId, id);
+            throw new ValidationException("Пользователь с ID " + friendId + " уже является другом");
+        }
+
+        userStorage.addFriend(id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {
         User user = getById(id);
-        getById(friendId);
-        if (user.getFriends() != null && user.getFriends().contains(friendId)) {
+        User friend = getById(friendId);
+
+        // Инициализируем friends, если он null
+        if (user.getFriends() == null) {
+            user.setFriends(new HashSet<>());
+        }
+
+        if (user.getFriends().contains(friendId)) {
             userStorage.removeFriend(id, friendId);
-            user.getFriends().remove(friendId);
-            userStorage.update(user);
         }
     }
 
     public List<User> getFriends(Long id) {
-        getById(id);
+        getById(id); // Проверка существования пользователя
         return userStorage.getFriends(id);
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
-        getById(id);
-        getById(otherId);
+        getById(id); // Проверка существования пользователя 1
+        getById(otherId); // Проверка существования пользователя 2
         return userStorage.getCommonFriends(id, otherId);
     }
 }

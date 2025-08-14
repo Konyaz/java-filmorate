@@ -40,10 +40,10 @@ public class GenreDaoImpl implements GenreDao {
         }
     }
 
-    private Genre mapRowToGenre(ResultSet rs, int rowNum) throws SQLException {
-        Genre genre = new Genre();
-        genre.setId(rs.getLong("id"));
-        genre.setName(rs.getString("name"));
-        return genre;
+    private Genre mapRowToGenre(ResultSet resultSet, int rowNum) throws SQLException {
+        return new Genre(
+                resultSet.getLong("id"),
+                resultSet.getString("name")
+        );
     }
 }

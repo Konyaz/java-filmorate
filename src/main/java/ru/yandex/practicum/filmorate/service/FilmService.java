@@ -26,49 +26,36 @@ public class FilmService {
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     public Film create(Film film) {
+        // Проверка на null перед вызовом методов
         if (film.getReleaseDate() == null) {
             log.error("Дата релиза фильма не указана");
             throw new ValidationException("Дата релиза обязательна");
         }
         if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
-            log.error("Дата релиза фильма раньше допустимой: {}", film.getReleaseDate());
+            log.error("Дата релиза фильма раньше 28 декабря 1895 года: {}", film.getReleaseDate());
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
-        }
-        if (film.getMpa() == null) {
-            log.error("MPA рейтинг не указан для фильма");
-            throw new ValidationException("MPA рейтинг обязателен");
         }
         try {
             log.info("Создание фильма: {}", film);
             return filmStorage.create(film);
         } catch (DataIntegrityViolationException e) {
-            log.error("Ошибка при создании фильма: неверные данные MPA или жанров", e);
-            throw new ValidationException("Ошибка при создании фильма: неверные данные MPA или жанров");
+            log.error("Фильм с названием {} уже существует", film.getName());
+            throw new ValidationException("Фильм с таким названием уже существует");
         }
     }
 
     public Film update(Film film) {
+        // Проверка на null перед вызовом методов
         if (film.getReleaseDate() == null) {
             log.error("Дата релиза фильма не указана");
             throw new ValidationException("Дата релиза обязательна");
         }
         if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
-            log.error("Дата релиза фильма раньше допустимой: {}", film.getReleaseDate());
+            log.error("Дата релиза фильма раньше 28 декабря 1895 года: {}", film.getReleaseDate());
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
         }
-        if (film.getMpa() == null) {
-            log.error("MPA рейтинг не указан для фильма");
-            throw new ValidationException("MPA рейтинг обязателен");
-        }
-        filmStorage.getById(film.getId())
-                .orElseThrow(() -> new NotFoundException("Фильм с id " + film.getId() + " не найден"));
-        try {
-            log.info("Обновление фильма: {}", film);
-            return filmStorage.update(film);
-        } catch (DataIntegrityViolationException e) {
-            log.error("Ошибка при обновлении фильма: неверные данные MPA или жанров", e);
-            throw new ValidationException("Ошибка при обновлении фильма: неверные данные MPA или жанров");
-        }
+        log.info("Обновление фильма: {}", film);
+        return filmStorage.update(film);
     }
 
     public List<Film> getAll() {
@@ -79,35 +66,38 @@ public class FilmService {
     public Film getById(Long id) {
         log.info("Получение фильма с ID: {}", id);
         return filmStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Фильм с id " + id + " не найден"));
+                .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
     }
 
     public void addLike(Long filmId, Long userId) {
-        Film film = filmStorage.getById(filmId)
-                .orElseThrow(() -> new NotFoundException("Фильм с id " + filmId + " не найден"));
+        Film film = getById(filmId);
         userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-        if (film.getLikes() != null && film.getLikes().contains(userId)) {
+
+        // Инициализируем likes, если он null
+        if (film.getLikes() == null) {
+            film.setLikes(new HashSet<>());
+        }
+
+        if (film.getLikes().contains(userId)) {
             log.warn("Пользователь {} уже поставил лайк фильму {}", userId, filmId);
             throw new ValidationException("Пользователь уже поставил лайк фильму");
         }
         filmStorage.addLike(filmId, userId);
-        if (film.getLikes() == null) {
-            film.setLikes(new HashSet<>());
-        }
-        film.getLikes().add(userId);
-        filmStorage.update(film);
     }
 
     public void removeLike(Long filmId, Long userId) {
-        Film film = filmStorage.getById(filmId)
-                .orElseThrow(() -> new NotFoundException("Фильм с id " + filmId + " не найден"));
+        Film film = getById(filmId);
         userStorage.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-        if (film.getLikes() != null && film.getLikes().contains(userId)) {
+
+        // Инициализируем likes, если он null
+        if (film.getLikes() == null) {
+            film.setLikes(new HashSet<>());
+        }
+
+        if (film.getLikes().contains(userId)) {
             filmStorage.removeLike(filmId, userId);
-            film.getLikes().remove(userId);
-            filmStorage.update(film);
         }
     }
 

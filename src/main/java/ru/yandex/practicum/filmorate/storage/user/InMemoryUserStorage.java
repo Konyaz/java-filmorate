@@ -51,10 +51,6 @@ public class InMemoryUserStorage implements UserStorage {
         if (user == null) {
             throw new NotFoundException("Пользователь с id " + id + " не найден");
         }
-        User friend = users.get(friendId);
-        if (friend == null) {
-            throw new NotFoundException("Пользователь с id " + friendId + " не найден");
-        }
         user.addFriend(friendId);
         log.info("Added friend with ID {} to user with ID {}", friendId, id);
     }

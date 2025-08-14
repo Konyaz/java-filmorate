@@ -20,7 +20,7 @@ public class LikeDaoImpl implements LikeDao {
 
     @Override
     public void removeLike(Long filmId, Long userId) {
-        String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
+        String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ? AND ROWNUM = 1"; // Добавлен ROWNUM = 1, чтобы удалять только одну запись
         jdbcTemplate.update(sql, filmId, userId);
     }
 
