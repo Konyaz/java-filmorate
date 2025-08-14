@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @ActiveProfiles("test")
-@Sql(scripts = "classpath:schema.sql")
+@Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class MpaDaoImplTest {
     @Autowired
     private MpaDaoImpl mpaDao;
@@ -25,7 +25,8 @@ class MpaDaoImplTest {
     void testGetAllMpa() {
         List<Mpa> mpaList = mpaDao.getAll();
         assertNotNull(mpaList);
-        assertTrue(mpaList.isEmpty()); // Пустой список, так как data.sql не загружается
+        assertFalse(mpaList.isEmpty(), "MPA list should not be empty after loading test data");
+        assertEquals(5, mpaList.size(), "Expected 5 MPA ratings");
     }
 
     @Test

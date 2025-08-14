@@ -12,6 +12,7 @@ import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,7 +51,7 @@ class GenreDaoImplTest {
 
     @Test
     void testGetNonExistentGenre() {
-        assertThrows(org.springframework.dao.EmptyResultDataAccessException.class,
-                () -> genreDao.getGenreById(999L));
+        Optional<Genre> genre = genreDao.getGenreById(999L);
+        assertTrue(genre.isEmpty(), "Non-existent genre should return empty Optional");
     }
 }
