@@ -15,28 +15,29 @@ import java.util.Optional;
 @Repository
 @RequiredArgsConstructor
 public class GenreDaoImpl implements GenreDao {
+
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public Optional<Genre> getById(Long id) {
+    public Optional<Genre> getGenreById(Long id) {
         final String sql = "SELECT id, name FROM genres WHERE id = ?";
         try {
-            Genre g = jdbcTemplate.queryForObject(sql, (rs, rn) -> {
-                Genre genre = new Genre();
-                genre.setId(rs.getLong("id"));
-                genre.setName(rs.getString("name"));
-                return genre;
+            Genre genre = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                Genre g = new Genre();
+                g.setId(rs.getLong("id"));
+                g.setName(rs.getString("name"));
+                return g;
             }, id);
-            return Optional.ofNullable(g);
+            return Optional.ofNullable(genre);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
     }
 
     @Override
-    public List<Genre> getAll() {
+    public List<Genre> getAllGenres() {
         final String sql = "SELECT id, name FROM genres ORDER BY id";
-        return jdbcTemplate.query(sql, (rs, rn) -> {
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Genre g = new Genre();
             g.setId(rs.getLong("id"));
             g.setName(rs.getString("name"));
