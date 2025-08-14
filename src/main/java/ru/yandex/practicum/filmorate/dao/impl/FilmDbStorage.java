@@ -53,11 +53,9 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
 
-        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
-                "VALUES (?, ?, ?, ?, ?)";
-
+        // Вставка фильма
+        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
-
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setString(1, film.getName());
@@ -70,27 +68,23 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
 
-        // Сохраняем жанры (без дубликатов)
+        // Вставка жанров
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            Set<Genre> uniqueGenres = new HashSet<>(film.getGenres());
-            for (Genre genre : uniqueGenres) {
-                jdbcTemplate.update(
-                        "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)",
-                        film.getId(), genre.getId()
-                );
+            String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+            for (Genre genre : film.getGenres()) {
+                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
             }
-            film.setGenres(new ArrayList<>(uniqueGenres));
         }
 
+        // Инициализация лайков
+        film.setLikes(new HashSet<>());
         return film;
     }
 
     @Override
     public Film update(Film film) {
         // Проверяем существование фильма
-        String checkSql = "SELECT COUNT(*) FROM films WHERE id = ?";
-        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, film.getId());
-        if (count == null || count == 0) {
+        if (getById(film.getId()).isEmpty()) {
             throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
         }
 
@@ -110,30 +104,18 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
 
-        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? " +
-                "WHERE id = ?";
+        // Обновление фильма
+        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
+        jdbcTemplate.update(sql, film.getName(), film.getDescription(), film.getReleaseDate(),
+                film.getDuration(), film.getMpa().getId(), film.getId());
 
-        jdbcTemplate.update(
-                sql,
-                film.getName(),
-                film.getDescription(),
-                film.getReleaseDate(),
-                film.getDuration(),
-                film.getMpa().getId(),
-                film.getId()
-        );
-
-        // Обновляем жанры (без дубликатов)
+        // Обновление жанров: удаляем старые, вставляем новые
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            Set<Genre> uniqueGenres = new HashSet<>(film.getGenres());
-            for (Genre genre : uniqueGenres) {
-                jdbcTemplate.update(
-                        "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)",
-                        film.getId(), genre.getId()
-                );
+            String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+            for (Genre genre : film.getGenres()) {
+                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
             }
-            film.setGenres(new ArrayList<>(uniqueGenres));
         }
 
         return film;

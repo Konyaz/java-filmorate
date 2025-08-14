@@ -1,6 +1,9 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,13 +20,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD) // Очистка базы перед каждым тестом
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class MpaDaoImplTest {
     @Autowired
     private MpaDaoImpl mpaDao;
 
     @Test
+    @Order(1)
     void testGetAllMpa() {
         List<Mpa> mpaList = mpaDao.getAll();
         assertNotNull(mpaList);
@@ -34,6 +39,7 @@ class MpaDaoImplTest {
     }
 
     @Test
+    @Order(2)
     void testGetMpaById() {
         Mpa mpa = new Mpa();
         mpa.setName("G");
@@ -45,6 +51,7 @@ class MpaDaoImplTest {
     }
 
     @Test
+    @Order(3)
     void testGetNonExistentMpa() {
         Optional<Mpa> found = mpaDao.getById(999L);
         assertTrue(found.isEmpty());
