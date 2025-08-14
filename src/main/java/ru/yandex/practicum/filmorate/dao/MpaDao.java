@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MpaDao {
-    List<Mpa> getAll();
-
     Optional<Mpa> getById(Long id);
 
-    Mpa create(Mpa mpa);
+    List<Mpa> getAll();
 }

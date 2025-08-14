@@ -7,28 +7,26 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
-@Component
 @Slf4j
+@Component("inMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(0);
 
     @Override
     public User create(User user) {
-        if (user.getId() == null) {
-            user.setId(idGenerator.incrementAndGet());
-        }
-        users.put(user.getId(), user);
-        log.info("Created user with ID: {}", user.getId());
+        long id = idGenerator.incrementAndGet();
+        user.setId(id);
+        users.put(id, user);
+        log.info("Created user with ID: {}", id);
         return user;
     }
 
     @Override
     public User update(User user) {
         if (!users.containsKey(user.getId())) {
-            throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");
+            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
         }
         users.put(user.getId(), user);
         log.info("Updated user with ID: {}", user.getId());
@@ -48,33 +46,39 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public void addFriend(Long id, Long friendId) {
         User user = users.get(id);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с id " + id + " не найден");
+        User friend = users.get(friendId);
+        if (user == null || friend == null) {
+            throw new NotFoundException("Пользователь не найден");
         }
-        user.addFriend(friendId);
-        log.info("Added friend with ID {} to user with ID {}", friendId, id);
+        user.getFriends().add(friendId);
+        friend.getFriends().add(id);
+        log.info("User {} and {} are now friends", id, friendId);
     }
 
     @Override
     public void removeFriend(Long id, Long friendId) {
         User user = users.get(id);
-        if (user == null) {
-            throw new NotFoundException("Пользователь с id " + id + " не найден");
+        User friend = users.get(friendId);
+        if (user == null || friend == null) {
+            throw new NotFoundException("Пользователь не найден");
         }
-        user.removeFriend(friendId);
-        log.info("Removed friend with ID {} from user with ID {}", friendId, id);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(id);
+        log.info("User {} and {} are no longer friends", id, friendId);
     }
 
     @Override
     public List<User> getFriends(Long id) {
         User user = users.get(id);
         if (user == null) {
-            throw new NotFoundException("Пользователь с id " + id + " не найден");
+            throw new NotFoundException("Пользователь с ID " + id + " не найден");
         }
-        return user.getFriends().stream()
-                .map(users::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        List<User> friends = new ArrayList<>();
+        for (Long friendId : user.getFriends()) {
+            Optional<User> friend = getById(friendId);
+            friend.ifPresent(friends::add);
+        }
+        return friends;
     }
 
     @Override
@@ -82,13 +86,15 @@ public class InMemoryUserStorage implements UserStorage {
         User user = users.get(id);
         User otherUser = users.get(otherId);
         if (user == null || otherUser == null) {
-            throw new NotFoundException("Один из пользователей не найден");
+            throw new NotFoundException("Пользователь не найден");
         }
-        Set<Long> commonFriendIds = new HashSet<>(user.getFriends());
-        commonFriendIds.retainAll(otherUser.getFriends());
-        return commonFriendIds.stream()
-                .map(users::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        Set<Long> commonIds = new HashSet<>(user.getFriends());
+        commonIds.retainAll(otherUser.getFriends());
+        List<User> commonFriends = new ArrayList<>();
+        for (Long fid : commonIds) {
+            Optional<User> u = getById(fid);
+            u.ifPresent(commonFriends::add);
+        }
+        return commonFriends;
     }
 }

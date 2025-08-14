@@ -1,9 +1,9 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.FriendDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -14,21 +14,13 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
-
-    @Autowired
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
+    private final FriendDao friendDao;
 
     public User create(User user) {
-        // Проверка на null и пробелы в логине
-        if (user.getLogin() == null || user.getLogin().contains(" ")) {
-            log.error("Логин не может быть пустым или содержать пробелы: {}", user.getLogin());
-            throw new ValidationException("Логин не может быть пустым и не должен содержать пробелы");
-        }
-        // Если имя не задано, используем логин
+        validate(user);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -37,12 +29,7 @@ public class UserService {
     }
 
     public User update(User user) {
-        // Проверка на null и пробелы в логине
-        if (user.getLogin() != null && user.getLogin().contains(" ")) {
-            log.error("Логин содержит пробелы: {}", user.getLogin());
-            throw new ValidationException("Логин не может содержать пробелы");
-        }
-        // Если имя не задано, используем логин
+        validate(user);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -62,43 +49,45 @@ public class UserService {
     }
 
     public void addFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        // Убираем избыточную проверку на null, так как friends инициализирован в User.java
-        if (user.getFriends().contains(friendId)) {
-            log.warn("Пользователь {} уже является другом пользователя {}", friendId, id);
-            throw new ValidationException("Пользователь с ID " + friendId + " уже является другом");
+        getById(id);
+        getById(friendId);
+
+        if (friendDao.getFriends(id).contains(friendId)) {
+            throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
-        userStorage.addFriend(id, friendId);
-        user.getFriends().add(friendId);
-        userStorage.update(user);
+
+        friendDao.addFriend(id, friendId);
+        log.info("Пользователь {} добавил в друзья {}", id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {
-        User user = getById(id);
+        getById(id);
         getById(friendId);
-        // Убираем избыточную проверку на null, так как friends инициализирован в User.java
-        if (user.getFriends().contains(friendId)) {
-            userStorage.removeFriend(id, friendId);
-            user.getFriends().remove(friendId);
-            userStorage.update(user);
-        }
+
+        friendDao.removeFriend(id, friendId);
+        log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }
 
     public List<User> getFriends(Long id) {
         getById(id);
-        return userStorage.getFriends(id);
+        return friendDao.getFriends(id).stream()
+                .map(uid -> userStorage.getById(uid)
+                        .orElseThrow(() -> new NotFoundException("Пользователь с ID " + uid + " не найден")))
+                .collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
-        User user = getById(id);
-        User otherUser = getById(otherId);
-        log.info("Получение общих друзей для пользователей {} и {}", id, otherId);
-        return user.getFriends().stream()
-                .filter(otherUser.getFriends()::contains)
-                .map(userStorage::getById)
-                .filter(java.util.Optional::isPresent)
-                .map(java.util.Optional::get)
+        getById(id);
+        getById(otherId);
+        return friendDao.getCommonFriends(id, otherId).stream()
+                .map(uid -> userStorage.getById(uid)
+                        .orElseThrow(() -> new NotFoundException("Пользователь с ID " + uid + " не найден")))
                 .collect(Collectors.toList());
+    }
+
+    private void validate(User user) {
+        if (user.getLogin() == null || user.getLogin().contains(" ")) {
+            throw new ValidationException("Логин не может быть пустым или содержать пробелы");
+        }
     }
 }

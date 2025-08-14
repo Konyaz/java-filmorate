@@ -1,23 +1,25 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
-import org.springframework.context.annotation.Profile;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
-@Profile("test")
-@Component
+@Slf4j
+@Component("inMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> films = new HashMap<>();
-    private long idCounter = 1;
+    private final AtomicLong idGenerator = new AtomicLong(0);
 
     @Override
     public Film create(Film film) {
-        film.setId(idCounter++);
-        film.setLikes(new HashSet<>());
-        films.put(film.getId(), film);
+        long id = idGenerator.incrementAndGet();
+        film.setId(id);
+        films.put(id, film);
+        log.info("Created film with ID: {}", id);
         return film;
     }
 
@@ -26,18 +28,14 @@ public class InMemoryFilmStorage implements FilmStorage {
         if (!films.containsKey(film.getId())) {
             throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
         }
-
-        // Сохраняем существующие лайки
-        Set<Long> existingLikes = films.get(film.getId()).getLikes();
-        film.setLikes(existingLikes);
-
         films.put(film.getId(), film);
+        log.info("Updated film with ID: {}", film.getId());
         return film;
     }
 
     @Override
     public List<Film> getAll() {
-        return List.copyOf(films.values());
+        return new ArrayList<>(films.values());
     }
 
     @Override
@@ -51,10 +49,8 @@ public class InMemoryFilmStorage implements FilmStorage {
         if (film == null) {
             throw new NotFoundException("Фильм с ID " + filmId + " не найден");
         }
-        if (film.getLikes() == null) {
-            film.setLikes(new HashSet<>());
-        }
         film.getLikes().add(userId);
+        log.info("User {} liked film {}", userId, filmId);
     }
 
     @Override
@@ -63,8 +59,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         if (film == null) {
             throw new NotFoundException("Фильм с ID " + filmId + " не найден");
         }
-        if (film.getLikes() != null) {
-            film.getLikes().remove(userId);
-        }
+        film.getLikes().remove(userId);
+        log.info("User {} removed like from film {}", userId, filmId);
     }
 }

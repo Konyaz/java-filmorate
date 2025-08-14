@@ -14,6 +14,7 @@ public interface UserStorage {
 
     Optional<User> getById(Long id);
 
+    // Для совместимости со старыми сервисами
     void addFriend(Long id, Long friendId);
 
     void removeFriend(Long id, Long friendId);

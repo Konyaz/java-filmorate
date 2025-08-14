@@ -14,6 +14,7 @@ public interface FilmStorage {
 
     Optional<Film> getById(Long id);
 
+    // Для совместимости со старыми сервисами
     void addLike(Long filmId, Long userId);
 
     void removeLike(Long filmId, Long userId);

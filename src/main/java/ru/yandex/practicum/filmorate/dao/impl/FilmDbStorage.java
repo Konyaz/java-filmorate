@@ -1,184 +1,121 @@
-package ru.yandex.practicum.filmorate.dao.impl;
+package ru.yandex.practicum.filmorate.storage.film;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.dao.GenreDao;
-import ru.yandex.practicum.filmorate.dao.MpaDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
+import java.sql.Statement;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-@Primary
+@Slf4j
 @Repository("filmDbStorage")
+@RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
-    private final GenreDao genreDao;
-    private final MpaDao mpaDao;
-
-    @Autowired
-    public FilmDbStorage(JdbcTemplate jdbcTemplate, GenreDao genreDao, MpaDao mpaDao) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.genreDao = genreDao;
-        this.mpaDao = mpaDao;
-    }
 
     @Override
     public Film create(Film film) {
-        // Проверяем существование MPA
-        Optional<Mpa> mpa = mpaDao.getById(film.getMpa().getId());
-        if (mpa.isEmpty()) {
-            throw new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден");
-        }
-
-        // Проверяем существование жанров
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            for (Genre genre : film.getGenres()) {
-                Optional<Genre> foundGenre = genreDao.getGenreById(genre.getId());
-                if (foundGenre.isEmpty()) {
-                    throw new NotFoundException("Жанр с ID " + genre.getId() + " не найден");
-                }
-            }
-        }
-
-        // Вставка фильма
-        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
+        final String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
+                "VALUES (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+        jdbcTemplate.update(con -> {
+            PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, film.getName());
             ps.setString(2, film.getDescription());
-            ps.setDate(3, Date.valueOf(film.getReleaseDate()));
+            ps.setDate(3, film.getReleaseDate() != null ? Date.valueOf(film.getReleaseDate()) : null);
             ps.setInt(4, film.getDuration());
             ps.setLong(5, film.getMpa().getId());
             return ps;
         }, keyHolder);
 
-        film.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
-
-        // Вставка жанров
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-            for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
-            }
-        }
-
-        // Инициализация лайков
-        film.setLikes(new HashSet<>());
+        Long id = Objects.requireNonNull(keyHolder.getKey()).longValue();
+        film.setId(id);
+        log.info("Film created id={}", id);
         return film;
     }
 
     @Override
     public Film update(Film film) {
-        // Проверяем существование фильма
-        if (getById(film.getId()).isEmpty()) {
+        final String sql = "UPDATE films " +
+                "SET name=?, description=?, release_date=?, duration=?, mpa_id=? " +
+                "WHERE id=?";
+        int updated = jdbcTemplate.update(sql,
+                film.getName(),
+                film.getDescription(),
+                film.getReleaseDate() != null ? Date.valueOf(film.getReleaseDate()) : null,
+                film.getDuration(),
+                film.getMpa().getId(),
+                film.getId());
+
+        if (updated == 0) {
             throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
         }
-
-        // Проверяем существование MPA
-        Optional<Mpa> mpa = mpaDao.getById(film.getMpa().getId());
-        if (mpa.isEmpty()) {
-            throw new NotFoundException("MPA рейтинг с ID " + film.getMpa().getId() + " не найден");
-        }
-
-        // Проверяем существование жанров
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            for (Genre genre : film.getGenres()) {
-                Optional<Genre> foundGenre = genreDao.getGenreById(genre.getId());
-                if (foundGenre.isEmpty()) {
-                    throw new NotFoundException("Жанр с ID " + genre.getId() + " не найден");
-                }
-            }
-        }
-
-        // Обновление фильма
-        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
-        jdbcTemplate.update(sql, film.getName(), film.getDescription(), film.getReleaseDate(),
-                film.getDuration(), film.getMpa().getId(), film.getId());
-
-        // Обновление жанров: удаляем старые, вставляем новые
-        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-            for (Genre genre : film.getGenres()) {
-                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
-            }
-        }
-
+        log.info("Film updated id={}", film.getId());
         return film;
     }
 
     @Override
     public List<Film> getAll() {
-        String sql = "SELECT f.*, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id";
-        return jdbcTemplate.query(sql, new FilmRowMapper());
+        final String sql = "SELECT id, name, description, release_date, duration, mpa_id FROM films ORDER BY id";
+        return jdbcTemplate.query(sql, (rs, rn) -> {
+            Film f = new Film();
+            f.setId(rs.getLong("id"));
+            f.setName(rs.getString("name"));
+            f.setDescription(rs.getString("description"));
+            if (rs.getDate("release_date") != null) {
+                f.setReleaseDate(rs.getDate("release_date").toLocalDate());
+            }
+            f.setDuration(rs.getInt("duration"));
+            Mpa m = new Mpa();
+            m.setId(rs.getLong("mpa_id"));
+            f.setMpa(m);
+            return f;
+        });
     }
 
     @Override
     public Optional<Film> getById(Long id) {
-        String sql = "SELECT f.*, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id = ?";
-        List<Film> films = jdbcTemplate.query(sql, new FilmRowMapper(), id);
-        return films.isEmpty() ? Optional.empty() : Optional.of(films.get(0));
+        final String sql = "SELECT id, name, description, release_date, duration, mpa_id FROM films WHERE id = ?";
+        try {
+            Film f = jdbcTemplate.queryForObject(sql, (rs, rn) -> {
+                Film film = new Film();
+                film.setId(rs.getLong("id"));
+                film.setName(rs.getString("name"));
+                film.setDescription(rs.getString("description"));
+                if (rs.getDate("release_date") != null) {
+                    film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+                }
+                film.setDuration(rs.getInt("duration"));
+                Mpa m = new Mpa();
+                m.setId(rs.getLong("mpa_id"));
+                film.setMpa(m);
+                return film;
+            }, id);
+            return Optional.ofNullable(f);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 
+    // Лайки вынесены в LikeDaoImpl
     @Override
     public void addLike(Long filmId, Long userId) {
-        jdbcTemplate.update(
-                "INSERT INTO likes (film_id, user_id) VALUES (?, ?)",
-                filmId, userId
-        );
+        throw new UnsupportedOperationException("Используйте LikeDaoImpl для операций с лайками");
     }
 
     @Override
     public void removeLike(Long filmId, Long userId) {
-        jdbcTemplate.update(
-                "DELETE FROM likes WHERE film_id = ? AND user_id = ?",
-                filmId, userId
-        );
-    }
-
-    private class FilmRowMapper implements RowMapper<Film> {
-        @Override
-        public Film mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Film film = new Film();
-            film.setId(rs.getLong("id"));
-            film.setName(rs.getString("name"));
-            film.setDescription(rs.getString("description"));
-            film.setReleaseDate(rs.getDate("release_date").toLocalDate());
-            film.setDuration(rs.getInt("duration"));
-
-            // MPA
-            Mpa mpa = new Mpa();
-            mpa.setId(rs.getLong("mpa_id"));
-            mpa.setName(rs.getString("mpa_name"));
-            film.setMpa(mpa);
-
-            // Жанры
-            List<Genre> genres = genreDao.getGenresByFilmId(film.getId());
-            film.setGenres(genres);
-
-            // Лайки
-            Set<Long> likes = new HashSet<>(jdbcTemplate.queryForList(
-                    "SELECT user_id FROM likes WHERE film_id = ?",
-                    Long.class,
-                    film.getId()
-            ));
-            film.setLikes(likes);
-
-            return film;
-        }
+        throw new UnsupportedOperationException("Используйте LikeDaoImpl для операций с лайками");
     }
 }

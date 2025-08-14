@@ -1,55 +1,46 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.dao.MpaDao;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Repository
-@RequiredArgsConstructor
-public class MpaDaoImpl implements MpaDao {
+public class MpaDaoImpl {
+
     private final JdbcTemplate jdbcTemplate;
 
-    @Override
-    public List<Mpa> getAll() {
-        String sql = "SELECT * FROM mpa";
-        return jdbcTemplate.query(sql, this::mapRowToMpa);
+    public MpaDaoImpl(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    @Override
-    public Optional<Mpa> getById(Long id) {
-        String sql = "SELECT * FROM mpa WHERE id = ?";
-        List<Mpa> mpaList = jdbcTemplate.query(sql, this::mapRowToMpa, id);
-        return mpaList.isEmpty() ? Optional.empty() : Optional.of(mpaList.get(0));
-    }
+    private final RowMapper<Mpa> mpaRowMapper = (rs, rowNum) -> new Mpa(
+            rs.getLong("id"),
+            rs.getString("name")
+    );
 
-    @Override
+    // Метод для создания MPA в базе
     public Mpa create(Mpa mpa) {
-        String sql = "INSERT INTO mpa (name) VALUES (?)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
-            ps.setString(1, mpa.getName());
-            return ps;
-        }, keyHolder);
-        mpa.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        jdbcTemplate.update("INSERT INTO mpa (name) VALUES (?)", mpa.getName());
+        // Получаем последний вставленный id
+        Long id = jdbcTemplate.queryForObject("SELECT id FROM mpa WHERE name = ? ORDER BY id DESC LIMIT 1",
+                Long.class, mpa.getName());
+        mpa.setId(id);
         return mpa;
     }
 
-    private Mpa mapRowToMpa(ResultSet rs, int rowNum) throws SQLException {
-        Mpa mpa = new Mpa();
-        mpa.setId(rs.getLong("id"));
-        mpa.setName(rs.getString("name"));
-        return mpa;
+    // Получить MPA по id
+    public Optional<Mpa> getById(Long id) {
+        List<Mpa> result = jdbcTemplate.query("SELECT * FROM mpa WHERE id = ?", mpaRowMapper, id);
+        if (result.isEmpty()) return Optional.empty();
+        return Optional.of(result.get(0));
+    }
+
+    // Получить всех MPA
+    public List<Mpa> getAll() {
+        return jdbcTemplate.query("SELECT * FROM mpa ORDER BY id", mpaRowMapper);
     }
 }

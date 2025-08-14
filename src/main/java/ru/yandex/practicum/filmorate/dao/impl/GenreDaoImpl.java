@@ -1,49 +1,46 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.GenreDao;
 import ru.yandex.practicum.filmorate.model.Genre;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class GenreDaoImpl implements GenreDao {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public List<Genre> getAllGenres() {
-        String sql = "SELECT * FROM genres ORDER BY id";
-        return jdbcTemplate.query(sql, this::mapRowToGenre);
-    }
-
-    @Override
-    public List<Genre> getGenresByFilmId(Long filmId) {
-        String sql = "SELECT g.* FROM genres g JOIN film_genres fg ON g.id = fg.genre_id WHERE fg.film_id = ? ORDER BY g.id";
-        return jdbcTemplate.query(sql, this::mapRowToGenre, filmId);
-    }
-
-    @Override
-    public Optional<Genre> getGenreById(Long id) {
+    public Optional<Genre> getById(Long id) {
+        final String sql = "SELECT id, name FROM genres WHERE id = ?";
         try {
-            String sql = "SELECT * FROM genres WHERE id = ?";
-            Genre genre = jdbcTemplate.queryForObject(sql, this::mapRowToGenre, id);
-            return Optional.ofNullable(genre);
+            Genre g = jdbcTemplate.queryForObject(sql, (rs, rn) -> {
+                Genre genre = new Genre();
+                genre.setId(rs.getLong("id"));
+                genre.setName(rs.getString("name"));
+                return genre;
+            }, id);
+            return Optional.ofNullable(g);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
     }
 
-    private Genre mapRowToGenre(ResultSet resultSet, int rowNum) throws SQLException {
-        return new Genre(
-                resultSet.getLong("id"),
-                resultSet.getString("name")
-        );
+    @Override
+    public List<Genre> getAll() {
+        final String sql = "SELECT id, name FROM genres ORDER BY id";
+        return jdbcTemplate.query(sql, (rs, rn) -> {
+            Genre g = new Genre();
+            g.setId(rs.getLong("id"));
+            g.setName(rs.getString("name"));
+            return g;
+        });
     }
 }

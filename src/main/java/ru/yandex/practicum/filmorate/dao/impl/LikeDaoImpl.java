@@ -1,32 +1,33 @@
 package ru.yandex.practicum.filmorate.dao.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.dao.LikeDao;
 
 import java.util.List;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
-public class LikeDaoImpl implements LikeDao {
+public class LikeDaoImpl {
     private final JdbcTemplate jdbcTemplate;
 
-    @Override
     public void addLike(Long filmId, Long userId) {
-        String sql = "INSERT INTO likes (film_id, user_id) VALUES (?, ?)";
+        // H2-совместимый upsert
+        final String sql = "MERGE INTO likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, filmId, userId);
+        log.info("Like added: filmId={}, userId={}", filmId, userId);
     }
 
-    @Override
     public void removeLike(Long filmId, Long userId) {
-        String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ? AND ROWNUM = 1"; // Добавлен ROWNUM = 1, чтобы удалять только одну запись
+        final String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
         jdbcTemplate.update(sql, filmId, userId);
+        log.info("Like removed: filmId={}, userId={}", filmId, userId);
     }
 
-    @Override
     public List<Long> getLikes(Long filmId) {
-        String sql = "SELECT user_id FROM likes WHERE film_id = ?";
-        return jdbcTemplate.queryForList(sql, Long.class, filmId);
+        final String sql = "SELECT user_id FROM likes WHERE film_id = ? ORDER BY user_id";
+        return jdbcTemplate.query(sql, (rs, rn) -> rs.getLong("user_id"), filmId);
     }
 }
