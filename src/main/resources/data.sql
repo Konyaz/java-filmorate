@@ -1,5 +1,5 @@
--- Начальные данные для таблицы mpa_ratings
-MERGE INTO mpa_ratings KEY (id) VALUES
+-- Начальные данные для таблицы mpa
+MERGE INTO mpa KEY (id) VALUES
 (1, 'G'),
 (2, 'PG'),
 (3, 'PG-13'),
@@ -38,7 +38,7 @@ INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES
 ('Film 7', 'Description 7', '2006-01-01', 125, 2);
 
 -- Добавляем жанры для фильмов
-INSERT INTO film_genre (film_id, genre_id) VALUES
+INSERT INTO film_genres (film_id, genre_id) VALUES
 (1, 1), (1, 2),
 (2, 2), (2, 3),
 (3, 3), (3, 4),

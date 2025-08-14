@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-@Sql(scripts = "classpath:schema.sql")
+@Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class LikeDaoImplTest {
     @Autowired
     private LikeDaoImpl likeDao;
@@ -43,9 +43,7 @@ class LikeDaoImplTest {
 
     @BeforeEach
     void setUp() {
-        Mpa mpa = new Mpa();
-        mpa.setName("G");
-        mpa = mpaDao.create(mpa);
+        Mpa mpa = mpaDao.getById(1L).orElseThrow(() -> new RuntimeException("MPA with ID 1 not found"));
 
         Film film = new Film();
         film.setName("Test Film");
