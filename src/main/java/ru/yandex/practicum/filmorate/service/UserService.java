@@ -24,6 +24,10 @@ public class UserService {
     }
 
     public User create(User user) {
+        if (user.getLogin() == null) {
+            log.error("Логин пользователя не указан");
+            throw new ValidationException("Логин обязателен");
+        }
         if (user.getLogin().contains(" ")) {
             log.error("Логин содержит пробелы: {}", user.getLogin());
             throw new ValidationException("Логин не может содержать пробелы");
@@ -38,6 +42,10 @@ public class UserService {
     }
 
     public User update(User user) {
+        if (user.getLogin() == null) {
+            log.error("Логин пользователя не указан");
+            throw new ValidationException("Логин обязателен");
+        }
         if (user.getLogin().contains(" ")) {
             log.error("Логин содержит пробелы: {}", user.getLogin());
             throw new ValidationException("Логин не может содержать пробелы");

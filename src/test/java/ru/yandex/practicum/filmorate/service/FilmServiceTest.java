@@ -7,10 +7,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -31,13 +33,22 @@ class FilmServiceTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
+            // Инициализация моков
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize mocks", e);
+        }
     }
 
     @Test
     void createFilm_success() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         when(filmStorage.create(film)).thenReturn(film);
 
         Film result = filmService.create(film);
@@ -50,6 +61,11 @@ class FilmServiceTest {
     void updateFilm_success() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(filmStorage.update(film)).thenReturn(film);
 
@@ -64,6 +80,11 @@ class FilmServiceTest {
     void updateFilm_notFound_throwsNotFoundException() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         when(filmStorage.getById(1L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> filmService.update(film));
@@ -75,8 +96,16 @@ class FilmServiceTest {
     void getAllFilms_success() {
         Film film1 = new Film();
         film1.setId(1L);
+        film1.setName("Film 1");
+        film1.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film1.setDuration(120);
+        film1.setMpa(new Mpa(1L, "G"));
         Film film2 = new Film();
         film2.setId(2L);
+        film2.setName("Film 2");
+        film2.setReleaseDate(LocalDate.of(2001, 1, 1));
+        film2.setDuration(100);
+        film2.setMpa(new Mpa(2L, "PG"));
         when(filmStorage.getAll()).thenReturn(List.of(film1, film2));
 
         List<Film> result = filmService.getAll();
@@ -91,6 +120,10 @@ class FilmServiceTest {
     void getFilmById_success() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
 
         Film result = filmService.getById(1L);
@@ -111,6 +144,10 @@ class FilmServiceTest {
     void addLike_success() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         film.setLikes(new HashSet<>());
         User user = new User();
         user.setId(1L);
@@ -142,6 +179,10 @@ class FilmServiceTest {
     void addLike_userNotFound_throwsNotFoundException() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.empty());
 
@@ -156,6 +197,10 @@ class FilmServiceTest {
     void removeLike_success() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         film.setLikes(new HashSet<>(Set.of(1L)));
         User user = new User();
         user.setId(1L);
@@ -176,6 +221,10 @@ class FilmServiceTest {
     void removeLike_notLiked_doesNothing() {
         Film film = new Film();
         film.setId(1L);
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         film.setLikes(new HashSet<>()); // Пустой set
         User user = new User();
         user.setId(1L);
@@ -195,9 +244,17 @@ class FilmServiceTest {
     void getPopularFilms_success() {
         Film film1 = new Film();
         film1.setId(1L);
+        film1.setName("Film 1");
+        film1.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film1.setDuration(120);
+        film1.setMpa(new Mpa(1L, "G"));
         film1.setLikes(new HashSet<>(Set.of(1L, 2L)));
         Film film2 = new Film();
         film2.setId(2L);
+        film2.setName("Film 2");
+        film2.setReleaseDate(LocalDate.of(2001, 1, 1));
+        film2.setDuration(100);
+        film2.setMpa(new Mpa(2L, "PG"));
         film2.setLikes(new HashSet<>(Set.of(1L)));
         when(filmStorage.getAll()).thenReturn(List.of(film1, film2));
 

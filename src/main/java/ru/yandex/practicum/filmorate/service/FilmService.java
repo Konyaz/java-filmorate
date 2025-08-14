@@ -26,9 +26,17 @@ public class FilmService {
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     public Film create(Film film) {
+        if (film.getReleaseDate() == null) {
+            log.error("Дата релиза фильма не указана");
+            throw new ValidationException("Дата релиза обязательна");
+        }
         if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
             log.error("Дата релиза фильма раньше допустимой: {}", film.getReleaseDate());
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        }
+        if (film.getMpa() == null) {
+            log.error("MPA рейтинг не указан для фильма");
+            throw new ValidationException("MPA рейтинг обязателен");
         }
         try {
             log.info("Создание фильма: {}", film);
@@ -40,9 +48,17 @@ public class FilmService {
     }
 
     public Film update(Film film) {
+        if (film.getReleaseDate() == null) {
+            log.error("Дата релиза фильма не указана");
+            throw new ValidationException("Дата релиза обязательна");
+        }
         if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
             log.error("Дата релиза фильма раньше допустимой: {}", film.getReleaseDate());
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        }
+        if (film.getMpa() == null) {
+            log.error("MPA рейтинг не указан для фильма");
+            throw new ValidationException("MPA рейтинг обязателен");
         }
         filmStorage.getById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с id " + film.getId() + " не найден"));
