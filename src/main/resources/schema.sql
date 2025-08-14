@@ -7,12 +7,12 @@ DROP TABLE IF EXISTS genres;
 DROP TABLE IF EXISTS mpa;
 
 CREATE TABLE mpa (
-    id INT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE genres (
-    id INT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL
 );
 
@@ -30,13 +30,13 @@ CREATE TABLE films (
     description VARCHAR(2000),
     release_date DATE,
     duration INT NOT NULL,
-    mpa_id INT NOT NULL,
+    mpa_id BIGINT NOT NULL,
     CONSTRAINT fk_films_mpa FOREIGN KEY (mpa_id) REFERENCES mpa(id)
 );
 
 CREATE TABLE film_genres (
     film_id BIGINT NOT NULL,
-    genre_id INT NOT NULL,
+    genre_id BIGINT NOT NULL,
     PRIMARY KEY (film_id, genre_id),
     CONSTRAINT fk_fg_film FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
     CONSTRAINT fk_fg_genre FOREIGN KEY (genre_id) REFERENCES genres(id)

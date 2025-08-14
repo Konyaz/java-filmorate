@@ -5,22 +5,25 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import ru.yandex.practicum.filmorate.dao.FriendDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class UserServiceTest {
     @Mock
     private UserStorage userStorage;
+
+    @Mock
+    private FriendDao friendDao;
 
     @InjectMocks
     private UserService userService;
@@ -128,23 +131,23 @@ class UserServiceTest {
         user.setEmail("user@example.com");
         user.setLogin("userlogin");
         user.setBirthday(LocalDate.of(1990, 1, 1));
-        user.setFriends(new HashSet<>());
         User friend = new User();
         friend.setId(2L);
         friend.setEmail("friend@example.com");
         friend.setLogin("friendlogin");
         friend.setBirthday(LocalDate.of(1991, 1, 1));
+
         when(userStorage.getById(1L)).thenReturn(Optional.of(user));
         when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
-        when(userStorage.update(user)).thenReturn(user);
+        when(friendDao.getFriends(1L)).thenReturn(List.of());
+        doNothing().when(friendDao).addFriend(1L, 2L);
 
         userService.addFriend(1L, 2L);
 
-        assertTrue(user.getFriends().contains(2L));
         verify(userStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(2L);
-        verify(userStorage, times(1)).addFriend(1L, 2L);
-        verify(userStorage, times(1)).update(user);
+        verify(friendDao, times(1)).getFriends(1L);
+        verify(friendDao, times(1)).addFriend(1L, 2L);
     }
 
     @Test
@@ -154,8 +157,7 @@ class UserServiceTest {
         assertThrows(NotFoundException.class, () -> userService.addFriend(1L, 2L));
         verify(userStorage, times(1)).getById(1L);
         verify(userStorage, never()).getById(2L);
-        verify(userStorage, never()).addFriend(anyLong(), anyLong());
-        verify(userStorage, never()).update(any(User.class));
+        verify(friendDao, never()).addFriend(anyLong(), anyLong());
     }
 
     @Test
@@ -171,8 +173,7 @@ class UserServiceTest {
         assertThrows(NotFoundException.class, () -> userService.addFriend(1L, 2L));
         verify(userStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(2L);
-        verify(userStorage, never()).addFriend(anyLong(), anyLong());
-        verify(userStorage, never()).update(any(User.class));
+        verify(friendDao, never()).addFriend(anyLong(), anyLong());
     }
 
     @Test
@@ -182,23 +183,21 @@ class UserServiceTest {
         user.setEmail("user@example.com");
         user.setLogin("userlogin");
         user.setBirthday(LocalDate.of(1990, 1, 1));
-        user.setFriends(new HashSet<>(Set.of(2L)));
         User friend = new User();
         friend.setId(2L);
         friend.setEmail("friend@example.com");
         friend.setLogin("friendlogin");
         friend.setBirthday(LocalDate.of(1991, 1, 1));
+
         when(userStorage.getById(1L)).thenReturn(Optional.of(user));
         when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
-        when(userStorage.update(user)).thenReturn(user);
+        doNothing().when(friendDao).removeFriend(1L, 2L);
 
         userService.removeFriend(1L, 2L);
 
-        assertFalse(user.getFriends().contains(2L));
         verify(userStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(2L);
-        verify(userStorage, times(1)).removeFriend(1L, 2L);
-        verify(userStorage, times(1)).update(user);
+        verify(friendDao, times(1)).removeFriend(1L, 2L);
     }
 
     @Test
@@ -208,22 +207,21 @@ class UserServiceTest {
         user.setEmail("user@example.com");
         user.setLogin("userlogin");
         user.setBirthday(LocalDate.of(1990, 1, 1));
-        user.setFriends(new HashSet<>()); // Пустой set
         User friend = new User();
         friend.setId(2L);
         friend.setEmail("friend@example.com");
         friend.setLogin("friendlogin");
         friend.setBirthday(LocalDate.of(1991, 1, 1));
+
         when(userStorage.getById(1L)).thenReturn(Optional.of(user));
         when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
+        doNothing().when(friendDao).removeFriend(1L, 2L);
 
         userService.removeFriend(1L, 2L);
 
-        assertTrue(user.getFriends().isEmpty());
         verify(userStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(2L);
-        verify(userStorage, never()).removeFriend(anyLong(), anyLong());
-        verify(userStorage, never()).update(any(User.class));
+        verify(friendDao, times(1)).removeFriend(1L, 2L);
     }
 
     @Test
@@ -238,15 +236,18 @@ class UserServiceTest {
         friend.setEmail("friend@example.com");
         friend.setLogin("friendlogin");
         friend.setBirthday(LocalDate.of(1991, 1, 1));
+
         when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.getFriends(1L)).thenReturn(List.of(friend));
+        when(friendDao.getFriends(1L)).thenReturn(List.of(2L));
+        when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
 
         List<User> result = userService.getFriends(1L);
 
         assertEquals(1, result.size());
         assertEquals(friend, result.get(0));
         verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).getFriends(1L);
+        verify(friendDao, times(1)).getFriends(1L);
+        verify(userStorage, times(1)).getById(2L);
     }
 
     @Test
@@ -266,9 +267,11 @@ class UserServiceTest {
         common.setEmail("common@example.com");
         common.setLogin("common");
         common.setBirthday(LocalDate.of(1992, 1, 1));
+
         when(userStorage.getById(1L)).thenReturn(Optional.of(user1));
         when(userStorage.getById(2L)).thenReturn(Optional.of(user2));
-        when(userStorage.getCommonFriends(1L, 2L)).thenReturn(List.of(common));
+        when(friendDao.getCommonFriends(1L, 2L)).thenReturn(List.of(3L));
+        when(userStorage.getById(3L)).thenReturn(Optional.of(common));
 
         List<User> result = userService.getCommonFriends(1L, 2L);
 
@@ -276,6 +279,7 @@ class UserServiceTest {
         assertEquals(common, result.get(0));
         verify(userStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(2L);
-        verify(userStorage, times(1)).getCommonFriends(1L, 2L);
+        verify(friendDao, times(1)).getCommonFriends(1L, 2L);
+        verify(userStorage, times(1)).getById(3L);
     }
 }

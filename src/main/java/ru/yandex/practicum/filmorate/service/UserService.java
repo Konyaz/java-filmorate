@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,8 +20,7 @@ public class UserService {
     private final UserStorage userStorage;
     private final FriendDao friendDao;
 
-    public User create(User user) {
-        validate(user);
+    public User create(@Valid User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -28,8 +28,7 @@ public class UserService {
         return userStorage.create(user);
     }
 
-    public User update(User user) {
-        validate(user);
+    public User update(@Valid User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -83,11 +82,5 @@ public class UserService {
                 .map(uid -> userStorage.getById(uid)
                         .orElseThrow(() -> new NotFoundException("Пользователь с ID " + uid + " не найден")))
                 .collect(Collectors.toList());
-    }
-
-    private void validate(User user) {
-        if (user.getLogin() == null || user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не может быть пустым или содержать пробелы");
-        }
     }
 }

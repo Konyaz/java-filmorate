@@ -9,6 +9,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.Date;
@@ -17,6 +18,8 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository("filmDbStorage")
@@ -41,6 +44,15 @@ public class FilmDbStorage implements FilmStorage {
 
         Long id = Objects.requireNonNull(keyHolder.getKey()).longValue();
         film.setId(id);
+
+        // Сохраняем жанры
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
+            for (Genre genre : film.getGenres()) {
+                jdbcTemplate.update(genreSql, id, genre.getId());
+            }
+        }
+
         log.info("Film created id={}", id);
         return film;
     }
@@ -61,13 +73,24 @@ public class FilmDbStorage implements FilmStorage {
         if (updated == 0) {
             throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
         }
+
+        // Обновляем жанры
+        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
+            for (Genre genre : film.getGenres()) {
+                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
+            }
+        }
+
         log.info("Film updated id={}", film.getId());
         return film;
     }
 
     @Override
     public List<Film> getAll() {
-        final String sql = "SELECT id, name, description, release_date, duration, mpa_id FROM films ORDER BY id";
+        final String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
+                "FROM films f JOIN mpa m ON f.mpa_id = m.id ORDER BY f.id";
         return jdbcTemplate.query(sql, (rs, rn) -> {
             Film f = new Film();
             f.setId(rs.getLong("id"));
@@ -79,14 +102,17 @@ public class FilmDbStorage implements FilmStorage {
             f.setDuration(rs.getInt("duration"));
             Mpa m = new Mpa();
             m.setId(rs.getLong("mpa_id"));
+            m.setName(rs.getString("mpa_name"));
             f.setMpa(m);
+            f.setGenres(loadGenres(f.getId()));
             return f;
         });
     }
 
     @Override
     public Optional<Film> getById(Long id) {
-        final String sql = "SELECT id, name, description, release_date, duration, mpa_id FROM films WHERE id = ?";
+        final String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
+                "FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id = ?";
         try {
             Film f = jdbcTemplate.queryForObject(sql, (rs, rn) -> {
                 Film film = new Film();
@@ -99,7 +125,9 @@ public class FilmDbStorage implements FilmStorage {
                 film.setDuration(rs.getInt("duration"));
                 Mpa m = new Mpa();
                 m.setId(rs.getLong("mpa_id"));
+                m.setName(rs.getString("mpa_name"));
                 film.setMpa(m);
+                film.setGenres(loadGenres(id));
                 return film;
             }, id);
             return Optional.ofNullable(f);
@@ -108,7 +136,16 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
-    // Лайки вынесены в LikeDaoImpl
+    private Set<Genre> loadGenres(Long filmId) {
+        final String sql = "SELECT g.id, g.name FROM film_genres fg JOIN genres g ON fg.genre_id = g.id WHERE fg.film_id = ?";
+        return jdbcTemplate.query(sql, (rs, rn) -> {
+            Genre g = new Genre();
+            g.setId(rs.getLong("id"));
+            g.setName(rs.getString("name"));
+            return g;
+        }, filmId).stream().collect(Collectors.toSet());
+    }
+
     @Override
     public void addLike(Long filmId, Long userId) {
         throw new UnsupportedOperationException("Используйте LikeDaoImpl для операций с лайками");

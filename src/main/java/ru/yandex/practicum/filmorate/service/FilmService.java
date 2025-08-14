@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,13 +25,13 @@ public class FilmService {
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
-    public Film create(Film film) {
+    public Film create(@Valid Film film) {
         validate(film);
         log.info("Создание фильма: {}", film);
         return filmStorage.create(film);
     }
 
-    public Film update(Film film) {
+    public Film update(@Valid Film film) {
         validate(film);
         log.info("Обновление фильма: {}", film);
         return filmStorage.update(film);

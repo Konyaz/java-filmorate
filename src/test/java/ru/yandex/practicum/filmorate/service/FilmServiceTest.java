@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import ru.yandex.practicum.filmorate.dao.LikeDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -13,12 +14,11 @@ import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class FilmServiceTest {
@@ -28,6 +28,9 @@ class FilmServiceTest {
 
     @Mock
     private UserStorage userStorage;
+
+    @Mock
+    private LikeDao likeDao;
 
     @InjectMocks
     private FilmService filmService;
@@ -142,21 +145,22 @@ class FilmServiceTest {
     void addLike_success() {
         Film film = new Film();
         film.setId(1L);
-        film.setLikes(new HashSet<>());
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         User user = new User();
         user.setId(1L);
 
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(filmStorage.update(film)).thenReturn(film);
+        doNothing().when(likeDao).addLike(1L, 1L);
 
         filmService.addLike(1L, 1L);
 
-        assertTrue(film.getLikes().contains(1L));
         verify(filmStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(1L);
-        verify(filmStorage, times(1)).addLike(1L, 1L);
-        verify(filmStorage, times(1)).update(film);
+        verify(likeDao, times(1)).addLike(1L, 1L);
     }
 
     @Test
@@ -166,8 +170,7 @@ class FilmServiceTest {
         assertThrows(NotFoundException.class, () -> filmService.addLike(1L, 1L));
         verify(filmStorage, times(1)).getById(1L);
         verify(userStorage, never()).getById(anyLong());
-        verify(filmStorage, never()).addLike(anyLong(), anyLong());
-        verify(filmStorage, never()).update(any(Film.class));
+        verify(likeDao, never()).addLike(anyLong(), anyLong());
     }
 
     @Test
@@ -181,48 +184,50 @@ class FilmServiceTest {
         assertThrows(NotFoundException.class, () -> filmService.addLike(1L, 1L));
         verify(filmStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(1L);
-        verify(filmStorage, never()).addLike(anyLong(), anyLong());
-        verify(filmStorage, never()).update(any(Film.class));
+        verify(likeDao, never()).addLike(anyLong(), anyLong());
     }
 
     @Test
     void removeLike_success() {
         Film film = new Film();
         film.setId(1L);
-        film.setLikes(new HashSet<>(Set.of(1L)));
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         User user = new User();
         user.setId(1L);
 
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(filmStorage.update(film)).thenReturn(film);
+        doNothing().when(likeDao).removeLike(1L, 1L);
 
         filmService.removeLike(1L, 1L);
 
-        assertFalse(film.getLikes().contains(1L));
         verify(filmStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(1L);
-        verify(filmStorage, times(1)).removeLike(1L, 1L);
-        verify(filmStorage, times(1)).update(film);
+        verify(likeDao, times(1)).removeLike(1L, 1L);
     }
 
     @Test
     void removeLike_notLiked_doesNothing() {
         Film film = new Film();
         film.setId(1L);
-        film.setLikes(new HashSet<>());
+        film.setName("Test Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
         User user = new User();
         user.setId(1L);
 
         when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
         when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        doNothing().when(likeDao).removeLike(1L, 1L);
 
         filmService.removeLike(1L, 1L);
 
-        assertTrue(film.getLikes().isEmpty());
         verify(filmStorage, times(1)).getById(1L);
         verify(userStorage, times(1)).getById(1L);
-        verify(filmStorage, never()).removeLike(anyLong(), anyLong());
-        verify(filmStorage, never()).update(any(Film.class));
+        verify(likeDao, times(1)).removeLike(1L, 1L);
     }
 }
