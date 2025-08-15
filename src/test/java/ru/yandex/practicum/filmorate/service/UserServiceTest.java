@@ -1,285 +1,175 @@
 package ru.yandex.practicum.filmorate.service;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.dao.FriendDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
+@AutoConfigureTestDatabase
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@ActiveProfiles("test")
+@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class UserServiceTest {
-    @Mock
+    @Autowired
+    private UserService userService;
+
+    @Autowired
     private UserStorage userStorage;
 
-    @Mock
+    @Autowired
     private FriendDao friendDao;
 
-    @InjectMocks
-    private UserService userService;
+    private Long userId1;
+    private Long userId2;
+    private Long userId3;
+
+    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        User user1 = new User();
+        user1.setEmail("user1@example.com");
+        user1.setLogin("user1");
+        user1.setName("User 1");
+        user1.setBirthday(LocalDate.of(1990, 1, 1));
+        User created1 = userService.create(user1);
+        userId1 = created1.getId();
+
+        User user2 = new User();
+        user2.setEmail("user2@example.com");
+        user2.setLogin("user2");
+        user2.setName("User 2");
+        user2.setBirthday(LocalDate.of(1991, 1, 1));
+        User created2 = userService.create(user2);
+        userId2 = created2.getId();
+
+        User user3 = new User();
+        user3.setEmail("user3@example.com");
+        user3.setLogin("user3");
+        user3.setName("User 3");
+        user3.setBirthday(LocalDate.of(1992, 1, 1));
+        User created3 = userService.create(user3);
+        userId3 = created3.getId();
     }
 
     @Test
-    void createUser_success() {
+    void shouldCreateUser() {
         User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
+        user.setEmail("test@example.com");
+        user.setLogin("testlogin");
+        user.setName("");
         user.setBirthday(LocalDate.of(1990, 1, 1));
-        when(userStorage.create(user)).thenReturn(user);
 
-        User result = userService.create(user);
-
-        assertEquals(user, result);
-        verify(userStorage, times(1)).create(user);
+        User createdUser = userService.create(user);
+        assertNotNull(createdUser.getId());
+        assertEquals("testlogin", createdUser.getName());
     }
 
     @Test
-    void updateUser_success() {
+    void shouldUpdateUser() {
         User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
+        user.setEmail("update@example.com");
+        user.setLogin("updatelogin");
+        user.setName("Update User");
         user.setBirthday(LocalDate.of(1990, 1, 1));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.update(user)).thenReturn(user);
+        User createdUser = userService.create(user);
+        Long id = createdUser.getId();
 
-        User result = userService.update(user);
-
-        assertEquals(user, result);
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).update(user);
+        createdUser.setLogin("newlogin");
+        User updatedUser = userService.update(createdUser);
+        assertEquals("newlogin", updatedUser.getLogin());
     }
 
     @Test
-    void updateUser_notFound_throwsNotFoundException() {
+    void shouldThrowNotFoundExceptionOnUpdateNonExistentUser() {
         User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
+        user.setId(999L);
+        user.setEmail("nonexistent@example.com");
+        user.setLogin("nonexistent");
+        user.setName("Nonexistent");
         user.setBirthday(LocalDate.of(1990, 1, 1));
-        when(userStorage.getById(1L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> userService.update(user));
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, never()).update(user);
     }
 
     @Test
-    void getAllUsers_success() {
-        User user1 = new User();
-        user1.setId(1L);
-        user1.setEmail("user1@example.com");
-        user1.setLogin("user1");
-        user1.setBirthday(LocalDate.of(1990, 1, 1));
-        User user2 = new User();
-        user2.setId(2L);
-        user2.setEmail("user2@example.com");
-        user2.setLogin("user2");
-        user2.setBirthday(LocalDate.of(1991, 1, 1));
-        when(userStorage.getAll()).thenReturn(List.of(user1, user2));
-
-        List<User> result = userService.getAll();
-
-        assertEquals(2, result.size());
-        assertEquals(user1, result.get(0));
-        assertEquals(user2, result.get(1));
-        verify(userStorage, times(1)).getAll();
+    void shouldGetAllUsers() {
+        List<User> users = userService.getAll();
+        assertFalse(users.isEmpty());
     }
 
     @Test
-    void getUserById_success() {
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-
-        User result = userService.getById(1L);
-
-        assertEquals(user, result);
-        verify(userStorage, times(1)).getById(1L);
+    void shouldGetUserById() {
+        User user = userService.getById(userId1);
+        assertEquals("user1@example.com", user.getEmail());
     }
 
     @Test
-    void getUserById_notFound_throwsNotFoundException() {
-        when(userStorage.getById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> userService.getById(1L));
-        verify(userStorage, times(1)).getById(1L);
+    void shouldThrowNotFoundExceptionOnGetNonExistentUser() {
+        assertThrows(NotFoundException.class, () -> userService.getById(999L));
     }
 
     @Test
-    void addFriend_success() {
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        User friend = new User();
-        friend.setId(2L);
-        friend.setEmail("friend@example.com");
-        friend.setLogin("friendlogin");
-        friend.setBirthday(LocalDate.of(1991, 1, 1));
-
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
-        when(friendDao.getFriends(1L)).thenReturn(List.of());
-        doNothing().when(friendDao).addFriend(1L, 2L);
-
-        userService.addFriend(1L, 2L);
-
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).getById(2L);
-        verify(friendDao, times(1)).getFriends(1L);
-        verify(friendDao, times(1)).addFriend(1L, 2L);
+    void shouldAddFriend() {
+        userService.addFriend(userId1, userId2);
+        List<User> friends = userService.getFriends(userId1);
+        assertEquals(0, friends.size()); // Поскольку статус по умолчанию "неподтверждённая"
     }
 
     @Test
-    void addFriend_userNotFound_throwsNotFoundException() {
-        when(userStorage.getById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> userService.addFriend(1L, 2L));
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, never()).getById(2L);
-        verify(friendDao, never()).addFriend(anyLong(), anyLong());
+    void shouldConfirmFriend() {
+        userService.addFriend(userId1, userId2);
+        userService.confirmFriend(userId1, userId2);
+        List<User> friends = userService.getFriends(userId1);
+        assertEquals(1, friends.size());
+        assertEquals(userId2, friends.get(0).getId());
     }
 
     @Test
-    void addFriend_friendNotFound_throwsNotFoundException() {
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.getById(2L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> userService.addFriend(1L, 2L));
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).getById(2L);
-        verify(friendDao, never()).addFriend(anyLong(), anyLong());
+    void shouldThrowValidationExceptionOnSelfFriendship() {
+        assertThrows(ValidationException.class, () -> userService.addFriend(userId1, userId1));
     }
 
     @Test
-    void removeFriend_success() {
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        User friend = new User();
-        friend.setId(2L);
-        friend.setEmail("friend@example.com");
-        friend.setLogin("friendlogin");
-        friend.setBirthday(LocalDate.of(1991, 1, 1));
-
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
-        doNothing().when(friendDao).removeFriend(1L, 2L);
-
-        userService.removeFriend(1L, 2L);
-
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).getById(2L);
-        verify(friendDao, times(1)).removeFriend(1L, 2L);
+    void shouldThrowValidationExceptionOnDuplicateFriendship() {
+        userService.addFriend(userId1, userId2);
+        assertThrows(ValidationException.class, () -> userService.addFriend(userId1, userId2));
     }
 
     @Test
-    void removeFriend_notFriend_doesNothing() {
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        User friend = new User();
-        friend.setId(2L);
-        friend.setEmail("friend@example.com");
-        friend.setLogin("friendlogin");
-        friend.setBirthday(LocalDate.of(1991, 1, 1));
-
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
-        doNothing().when(friendDao).removeFriend(1L, 2L);
-
-        userService.removeFriend(1L, 2L);
-
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).getById(2L);
-        verify(friendDao, times(1)).removeFriend(1L, 2L);
+    void shouldRemoveFriend() {
+        userService.addFriend(userId1, userId2);
+        userService.confirmFriend(userId1, userId2);
+        userService.removeFriend(userId1, userId2);
+        List<User> friends = userService.getFriends(userId1);
+        assertTrue(friends.isEmpty());
     }
 
     @Test
-    void getFriends_success() {
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("user@example.com");
-        user.setLogin("userlogin");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        User friend = new User();
-        friend.setId(2L);
-        friend.setEmail("friend@example.com");
-        friend.setLogin("friendlogin");
-        friend.setBirthday(LocalDate.of(1991, 1, 1));
-
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        when(friendDao.getFriends(1L)).thenReturn(List.of(2L));
-        when(userStorage.getById(2L)).thenReturn(Optional.of(friend));
-
-        List<User> result = userService.getFriends(1L);
-
-        assertEquals(1, result.size());
-        assertEquals(friend, result.get(0));
-        verify(userStorage, times(1)).getById(1L);
-        verify(friendDao, times(1)).getFriends(1L);
-        verify(userStorage, times(1)).getById(2L);
-    }
-
-    @Test
-    void getCommonFriends_success() {
-        User user1 = new User();
-        user1.setId(1L);
-        user1.setEmail("user1@example.com");
-        user1.setLogin("user1");
-        user1.setBirthday(LocalDate.of(1990, 1, 1));
-        User user2 = new User();
-        user2.setId(2L);
-        user2.setEmail("user2@example.com");
-        user2.setLogin("user2");
-        user2.setBirthday(LocalDate.of(1991, 1, 1));
-        User common = new User();
-        common.setId(3L);
-        common.setEmail("common@example.com");
-        common.setLogin("common");
-        common.setBirthday(LocalDate.of(1992, 1, 1));
-
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user1));
-        when(userStorage.getById(2L)).thenReturn(Optional.of(user2));
-        when(friendDao.getCommonFriends(1L, 2L)).thenReturn(List.of(3L));
-        when(userStorage.getById(3L)).thenReturn(Optional.of(common));
-
-        List<User> result = userService.getCommonFriends(1L, 2L);
-
-        assertEquals(1, result.size());
-        assertEquals(common, result.get(0));
-        verify(userStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).getById(2L);
-        verify(friendDao, times(1)).getCommonFriends(1L, 2L);
-        verify(userStorage, times(1)).getById(3L);
+    void shouldGetCommonFriends() {
+        userService.addFriend(userId1, userId3);
+        userService.addFriend(userId2, userId3);
+        userService.confirmFriend(userId1, userId3);
+        userService.confirmFriend(userId2, userId3);
+        List<User> commonFriends = userService.getCommonFriends(userId1, userId2);
+        assertEquals(1, commonFriends.size());
+        assertEquals(userId3, commonFriends.get(0).getId());
     }
 }
