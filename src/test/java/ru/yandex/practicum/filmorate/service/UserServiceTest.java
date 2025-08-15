@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql", "classpath:test-data-genres.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class UserServiceTest {
     @Autowired
     private UserService userService;
