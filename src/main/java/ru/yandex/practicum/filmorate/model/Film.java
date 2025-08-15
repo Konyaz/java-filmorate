@@ -17,7 +17,7 @@ public class Film {
     @NotBlank(message = "Название фильма не может быть пустым")
     private String name;
 
-    @Size(max = 2000, message = "Описание не может превышать 2000 символов")
+    @Size(max = 200, message = "Описание не может превышать 200 символов")
     private String description;
 
     @NotNull(message = "Дата релиза обязательна")
@@ -27,8 +27,7 @@ public class Film {
     private int duration;
 
     @NotNull(message = "Рейтинг MPA обязателен")
-    private Long mpaId;
+    private Mpa mpa;
 
-    private Set<Long> genreIds = new HashSet<>();
-    private Set<Long> likes = new HashSet<>();
+    private Set<Genre> genres = new HashSet<>();
 }

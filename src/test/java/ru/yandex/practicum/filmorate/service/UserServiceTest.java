@@ -11,10 +11,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.dao.FriendDao;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -130,7 +130,7 @@ class UserServiceTest {
     void shouldAddFriend() {
         userService.addFriend(userId1, userId2);
         List<User> friends = userService.getFriends(userId1);
-        assertEquals(0, friends.size()); // Поскольку статус по умолчанию "неподтверждённая"
+        assertEquals(0, friends.size());
     }
 
     @Test

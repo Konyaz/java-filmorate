@@ -43,7 +43,7 @@ class LikeDaoImplTest {
 
     @BeforeEach
     void setUp() {
-        Mpa mpa = mpaDao.getById(1L).orElseThrow(() -> new RuntimeException("MPA with ID 1 not found"));
+        Mpa mpa = mpaDao.getMpaById(1L).orElseThrow(() -> new RuntimeException("MPA with ID 1 not found"));
 
         Film film = new Film();
         film.setName("Test Film");

@@ -7,9 +7,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -104,6 +104,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void removeFriend(Long id, Long friendId) {
+        throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");
+    }
+
+    @Override
+    public void confirmFriend(Long id, Long friendId) {
         throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");
     }
 

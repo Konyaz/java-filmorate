@@ -5,13 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import ru.yandex.practicum.filmorate.dao.FilmStorage;
 import ru.yandex.practicum.filmorate.dao.LikeDao;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -80,7 +80,7 @@ class FilmServiceTest {
     void updateFilm_notFound_throwsNotFoundException() {
         Film film = new Film();
         film.setId(1L);
-        film.setReleaseDate(LocalDate.of(2000, 1, 1)); // Добавили дату, чтобы избежать ValidationException
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
 
         when(filmStorage.update(film)).thenThrow(new NotFoundException("Фильм не найден"));
 

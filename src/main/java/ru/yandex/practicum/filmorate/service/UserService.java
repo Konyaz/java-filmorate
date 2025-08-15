@@ -6,10 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.FriendDao;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class UserService {
     @Qualifier("userDbStorage")
     private final UserStorage userStorage;
+
     private final FriendDao friendDao;
 
     public User create(@Valid User user) {

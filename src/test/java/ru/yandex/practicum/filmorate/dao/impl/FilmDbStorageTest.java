@@ -38,7 +38,7 @@ class FilmDbStorageTest {
     @BeforeEach
     void setUp() {
         // Используем существующий MPA из test-data-mpa.sql
-        Mpa mpa = mpaDao.getById(1L).orElseThrow(() -> new RuntimeException("MPA with ID 1 not found"));
+        Mpa mpa = mpaDao.getMpaById(1L).orElseThrow(() -> new RuntimeException("MPA with ID 1 not found"));
 
         testFilm = new Film();
         testFilm.setName("Test Film");
@@ -77,7 +77,7 @@ class FilmDbStorageTest {
     void testGetAllFilms() {
         filmStorage.create(testFilm);
 
-        Mpa mpa = mpaDao.getById(2L).orElseThrow(() -> new RuntimeException("MPA with ID 2 not found"));
+        Mpa mpa = mpaDao.getMpaById(2L).orElseThrow(() -> new RuntimeException("MPA with ID 2 not found"));
 
         Film anotherFilm = new Film();
         anotherFilm.setName("Another Film");

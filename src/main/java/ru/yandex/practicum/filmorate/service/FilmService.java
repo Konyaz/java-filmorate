@@ -3,13 +3,14 @@ package ru.yandex.practicum.filmorate.service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.FilmStorage;
 import ru.yandex.practicum.filmorate.dao.LikeDao;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,8 +20,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
+    @Qualifier("filmDbStorage")
     private final FilmStorage filmStorage;
+
+    @Qualifier("userDbStorage")
     private final UserStorage userStorage;
+
     private final LikeDao likeDao;
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
@@ -83,6 +88,9 @@ public class FilmService {
         }
         if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        }
+        if (film.getMpa() == null) {
+            throw new ValidationException("Рейтинг MPA обязателен");
         }
     }
 }

@@ -13,7 +13,6 @@ import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -58,7 +57,7 @@ class UserControllerTest {
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(user1)))
-                .andExpect(status().isCreated()) // Changed from isOk() to isCreated()
+                .andExpect(status().isCreated())
                 .andExpect(content().json(objectMapper.writeValueAsString(user1)));
     }
 
@@ -109,7 +108,6 @@ class UserControllerTest {
 
     @Test
     void getFriends_success() throws Exception {
-        user1.setFriends(Set.of(2L));
         when(userService.getFriends(1L)).thenReturn(List.of(user2));
 
         mockMvc.perform(get("/users/1/friends"))
@@ -119,13 +117,12 @@ class UserControllerTest {
 
     @Test
     void getCommonFriends_success() throws Exception {
-        user1.setFriends(Set.of(3L));
-        user2.setFriends(Set.of(3L));
         User commonFriend = new User();
         commonFriend.setId(3L);
         commonFriend.setEmail("user3@example.com");
         commonFriend.setLogin("user3");
         commonFriend.setBirthday(LocalDate.of(1992, 1, 1));
+
         when(userService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));
 
         mockMvc.perform(get("/users/1/friends/common/2"))
