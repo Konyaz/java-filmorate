@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/mpa")
@@ -19,16 +18,13 @@ public class MpaController {
     private final MpaDao mpaDao;
 
     @GetMapping
-    public List<Mpa> getAll() {
-        return mpaDao.getAll();
+    public List<Mpa> getAllMpa() {
+        return mpaDao.getAllMpa();
     }
 
     @GetMapping("/{id}")
-    public Mpa getById(@PathVariable Long id) {
-        Optional<Mpa> mpa = mpaDao.getById(id);
-        if (mpa.isEmpty()) {
-            throw new NotFoundException("MPA рейтинг с ID " + id + " не найден");
-        }
-        return mpa.get();
+    public Mpa getMpaById(@PathVariable Long id) {
+        return mpaDao.getMpaById(id)
+                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + id + " не найден"));
     }
 }

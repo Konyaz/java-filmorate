@@ -27,8 +27,8 @@ public class Film {
     private int duration;
 
     @NotNull(message = "Рейтинг MPA обязателен")
-    private Mpa mpa;
+    private Long mpaId;
 
-    private Set<Genre> genres = new HashSet<>();
+    private Set<Long> genreIds = new HashSet<>();
     private Set<Long> likes = new HashSet<>();
 }

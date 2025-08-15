@@ -53,6 +53,7 @@ CREATE TABLE likes (
 CREATE TABLE friends (
     user_id BIGINT NOT NULL,
     friend_id BIGINT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'неподтверждённая',
     PRIMARY KEY (user_id, friend_id),
     CONSTRAINT fk_friends_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_friends_friend FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
