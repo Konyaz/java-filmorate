@@ -29,6 +29,8 @@ public class UserService {
     }
 
     public User update(@Valid User user) {
+        userStorage.getById(user.getId())
+                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + user.getId() + " не найден"));
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -50,13 +52,22 @@ public class UserService {
     public void addFriend(Long id, Long friendId) {
         getById(id);
         getById(friendId);
-
+        if (id.equals(friendId)) {
+            throw new ValidationException("Пользователь не может добавить себя в друзья");
+        }
         if (friendDao.getFriends(id).contains(friendId)) {
             throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
 
-        friendDao.addFriend(id, friendId);
-        log.info("Пользователь {} добавил в друзья {}", id, friendId);
+        friendDao.addFriend(id, friendId, "неподтверждённая");
+        log.info("Пользователь {} добавил в друзья {} (неподтверждённая)", id, friendId);
+    }
+
+    public void confirmFriend(Long id, Long friendId) {
+        getById(id);
+        getById(friendId);
+        friendDao.confirmFriend(id, friendId);
+        log.info("Пользователь {} подтвердил дружбу с {}", id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {

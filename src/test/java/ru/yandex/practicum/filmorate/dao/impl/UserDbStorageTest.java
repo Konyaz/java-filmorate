@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
@@ -20,11 +19,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@Import(UserDbStorage.class)
 @AutoConfigureTestDatabase
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.properties")
-@Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql", "classpath:test-data-genres.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:schema.sql", "classpath:data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class UserDbStorageTest {
     @Autowired
     private UserDbStorage userStorage;
@@ -76,7 +74,7 @@ class UserDbStorageTest {
         userStorage.create(anotherUser);
 
         List<User> users = userStorage.getAll();
-        assertEquals(2, users.size());
+        assertEquals(5, users.size()); // 3 from data.sql + 2 created
     }
 
     @Test
