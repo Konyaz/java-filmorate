@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Import({FilmDbStorage.class, GenreDaoImpl.class, MpaDaoImpl.class})
 @ActiveProfiles("test")
-@Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:schema.sql", "classpath:test-data.sql"})
 class FilmDbStorageTest {
     @Autowired
     private FilmDbStorage filmStorage;
@@ -37,7 +37,6 @@ class FilmDbStorageTest {
 
     @BeforeEach
     void setUp() {
-        // Используем существующий MPA из test-data-mpa.sql
         Mpa mpa = mpaDao.getMpaById(1L).orElseThrow(() -> new RuntimeException("MPA with ID 1 not found"));
 
         testFilm = new Film();

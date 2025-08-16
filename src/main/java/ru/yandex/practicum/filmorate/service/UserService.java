@@ -12,7 +12,6 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -53,30 +52,23 @@ public class UserService {
     }
 
     public void addFriend(Long id, Long friendId) {
-        getById(id);
-        getById(friendId);
-        if (id.equals(friendId)) {
-            throw new ValidationException("Пользователь не может добавить себя в друзья");
-        }
-        if (friendDao.getFriends(id).contains(friendId)) {
+        validateUserIds(id, friendId);
+        if (friendDao.isFriendshipExists(id, friendId)) {
             throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
 
-        friendDao.addFriend(id, friendId, "неподтверждённая");
+        friendDao.addFriend(id, friendId, "unconfirmed");
         log.info("Пользователь {} добавил в друзья {} (неподтверждённая)", id, friendId);
     }
 
     public void confirmFriend(Long id, Long friendId) {
-        getById(id);
-        getById(friendId);
-        friendDao.confirmFriend(id, friendId);
+        validateUserIds(id, friendId);
+        friendDao.confirmFriendship(id, friendId);
         log.info("Пользователь {} подтвердил дружбу с {}", id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {
-        getById(id);
-        getById(friendId);
-
+        validateUserIds(id, friendId);
         friendDao.removeFriend(id, friendId);
         log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }
@@ -84,17 +76,22 @@ public class UserService {
     public List<User> getFriends(Long id) {
         getById(id);
         return friendDao.getFriends(id).stream()
-                .map(uid -> userStorage.getById(uid)
-                        .orElseThrow(() -> new NotFoundException("Пользователь с ID " + uid + " не найден")))
-                .collect(Collectors.toList());
+                .map(this::getById)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
-        getById(id);
-        getById(otherId);
+        validateUserIds(id, otherId);
         return friendDao.getCommonFriends(id, otherId).stream()
-                .map(uid -> userStorage.getById(uid)
-                        .orElseThrow(() -> new NotFoundException("Пользователь с ID " + uid + " не найден")))
-                .collect(Collectors.toList());
+                .map(this::getById)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private void validateUserIds(Long id, Long friendId) {
+        if (id.equals(friendId)) {
+            throw new ValidationException("Пользователь не может добавить себя в друзья");
+        }
+        getById(id);
+        getById(friendId);
     }
 }

@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -74,10 +75,7 @@ public class FilmService {
     public List<Film> getPopularFilms(int count) {
         log.info("Получение {} популярных фильмов", count);
         return filmStorage.getAll().stream()
-                .sorted((f1, f2) -> Integer.compare(
-                        likeDao.getLikes(f2.getId()).size(),
-                        likeDao.getLikes(f1.getId()).size()
-                ))
+                .sorted(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()))
                 .limit(count)
                 .collect(Collectors.toList());
     }

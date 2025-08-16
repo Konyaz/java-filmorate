@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.dao.FilmStorage;
 import ru.yandex.practicum.filmorate.dao.LikeDao;
 import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
@@ -208,24 +209,81 @@ class FilmServiceTest {
     }
 
     @Test
-    void removeLike_notLiked_doesNothing() {
+    void getPopularFilms_success() {
+        // Создаем тестовые фильмы
+        Film film1 = new Film();
+        film1.setId(1L);
+        film1.setName("Film 1");
+        film1.setMpa(new Mpa(1L, "G"));
+
+        Film film2 = new Film();
+        film2.setId(2L);
+        film2.setName("Film 2");
+        film2.setMpa(new Mpa(2L, "PG"));
+
+        Film film3 = new Film();
+        film3.setId(3L);
+        film3.setName("Film 3");
+        film3.setMpa(new Mpa(3L, "PG-13"));
+
+        // Настраиваем моки
+        when(filmStorage.getAll()).thenReturn(List.of(film1, film2, film3));
+        when(likeDao.getLikes(1L)).thenReturn(List.of(1L, 2L)); // 2 лайка
+        when(likeDao.getLikes(2L)).thenReturn(List.of(1L));     // 1 лайк
+        when(likeDao.getLikes(3L)).thenReturn(List.of());       // 0 лайков
+
+        // Вызываем метод
+        List<Film> popularFilms = filmService.getPopularFilms(2);
+
+        // Проверяем результаты
+        assertEquals(2, popularFilms.size());
+        assertEquals(1L, popularFilms.get(0).getId()); // Фильм с наибольшим количеством лайков
+        assertEquals(2L, popularFilms.get(1).getId()); // Второй по популярности
+    }
+
+    @Test
+    void shouldThrowValidationExceptionWhenReleaseDateBeforeMinDate() {
         Film film = new Film();
-        film.setId(1L);
-        film.setName("Test Film");
-        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setName("Invalid Film");
+        film.setReleaseDate(LocalDate.of(1890, 1, 1));
         film.setDuration(120);
         film.setMpa(new Mpa(1L, "G"));
-        User user = new User();
-        user.setId(1L);
 
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
-        doNothing().when(likeDao).removeLike(1L, 1L);
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> filmService.create(film)
+        );
 
-        filmService.removeLike(1L, 1L);
+        assertEquals("Дата релиза не может быть раньше 28 декабря 1895 года", exception.getMessage());
+    }
 
-        verify(filmStorage, times(1)).getById(1L);
-        verify(userStorage, times(1)).getById(1L);
-        verify(likeDao, times(1)).removeLike(1L, 1L);
+    @Test
+    void shouldThrowValidationExceptionWhenMpaIsNull() {
+        Film film = new Film();
+        film.setName("Invalid Film");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> filmService.create(film)
+        );
+
+        assertEquals("Рейтинг MPA обязателен", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowValidationExceptionWhenReleaseDateIsNull() {
+        Film film = new Film();
+        film.setName("Invalid Film");
+        film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> filmService.create(film)
+        );
+
+        assertEquals("Дата релиза обязательна", exception.getMessage());
     }
 }

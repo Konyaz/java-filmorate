@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-@Sql(scripts = {"classpath:schema.sql", "classpath:test-data-mpa.sql", "classpath:test-data-genres.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = {"classpath:schema.sql", "classpath:test-data.sql"})
 class FriendDaoImplTest {
     @Autowired
     private FriendDaoImpl friendDao;
@@ -58,7 +58,7 @@ class FriendDaoImplTest {
 
     @Test
     void testAddFriend() {
-        friendDao.addFriend(userId1, userId2, "неподтверждённая");
+        friendDao.addFriend(userId1, userId2, "unconfirmed");
         List<Long> friends = friendDao.getFriends(userId1);
 
         assertEquals(0, friends.size());
@@ -66,8 +66,8 @@ class FriendDaoImplTest {
 
     @Test
     void testConfirmFriend() {
-        friendDao.addFriend(userId1, userId2, "неподтверждённая");
-        friendDao.confirmFriend(userId1, userId2);
+        friendDao.addFriend(userId1, userId2, "unconfirmed");
+        friendDao.confirmFriendship(userId1, userId2);
         List<Long> friends = friendDao.getFriends(userId1);
 
         assertEquals(1, friends.size());
@@ -76,8 +76,8 @@ class FriendDaoImplTest {
 
     @Test
     void testRemoveFriend() {
-        friendDao.addFriend(userId1, userId2, "неподтверждённая");
-        friendDao.confirmFriend(userId1, userId2);
+        friendDao.addFriend(userId1, userId2, "unconfirmed");
+        friendDao.confirmFriendship(userId1, userId2);
         friendDao.removeFriend(userId1, userId2);
         List<Long> friends = friendDao.getFriends(userId1);
 
@@ -86,10 +86,10 @@ class FriendDaoImplTest {
 
     @Test
     void testGetCommonFriends() {
-        friendDao.addFriend(userId1, userId3, "неподтверждённая");
-        friendDao.addFriend(userId2, userId3, "неподтверждённая");
-        friendDao.confirmFriend(userId1, userId3);
-        friendDao.confirmFriend(userId2, userId3);
+        friendDao.addFriend(userId1, userId3, "unconfirmed");
+        friendDao.addFriend(userId2, userId3, "unconfirmed");
+        friendDao.confirmFriendship(userId1, userId3);
+        friendDao.confirmFriendship(userId2, userId3);
 
         List<Long> commonFriends = friendDao.getCommonFriends(userId1, userId2);
 
@@ -99,10 +99,10 @@ class FriendDaoImplTest {
 
     @Test
     void testGetFriends() {
-        friendDao.addFriend(userId1, userId2, "неподтверждённая");
-        friendDao.addFriend(userId1, userId3, "неподтверждённая");
-        friendDao.confirmFriend(userId1, userId2);
-        friendDao.confirmFriend(userId1, userId3);
+        friendDao.addFriend(userId1, userId2, "unconfirmed");
+        friendDao.addFriend(userId1, userId3, "unconfirmed");
+        friendDao.confirmFriendship(userId1, userId2);
+        friendDao.confirmFriendship(userId1, userId3);
         List<Long> friends = friendDao.getFriends(userId1);
 
         assertEquals(2, friends.size());
