@@ -53,9 +53,10 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
+    public ResponseEntity<Void> removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("DELETE /users/{}/friends/{}", id, friendId);
         friendService.removeFriend(id, friendId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/friends")

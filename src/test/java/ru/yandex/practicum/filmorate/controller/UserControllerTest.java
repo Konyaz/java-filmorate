@@ -106,8 +106,9 @@ class UserControllerTest {
     void removeFriend_success() throws Exception {
         doNothing().when(friendService).removeFriend(1L, 2L);
 
+
         mockMvc.perform(delete("/users/1/friends/2"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
