@@ -16,7 +16,6 @@ import java.util.Optional;
 @Repository
 @RequiredArgsConstructor
 public class GenreDaoImpl implements GenreDao {
-
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -50,7 +49,7 @@ public class GenreDaoImpl implements GenreDao {
     public List<Genre> getGenresByFilmId(Long filmId) {
         final String sql = "SELECT g.id, g.name FROM film_genres fg " +
                 "JOIN genres g ON fg.genre_id = g.id " +
-                "WHERE fg.film_id = ? ORDER BY g.id";
+                "WHERE fg.film_id = ?";
         try {
             return jdbcTemplate.query(sql, (rs, rowNum) -> {
                 Genre genre = new Genre();

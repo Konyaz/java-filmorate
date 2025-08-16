@@ -15,10 +15,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Repository("filmDbStorage")
@@ -47,15 +44,26 @@ public class FilmDbStorage implements FilmStorage {
         film.setId(id);
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
+            // Сохраняем порядок жанров и убираем дубликаты
+            Set<Long> addedGenreIds = new HashSet<>();
+            List<Genre> uniqueGenres = new ArrayList<>();
+
             for (Genre genre : film.getGenres()) {
+                if (!addedGenreIds.contains(genre.getId())) {
+                    uniqueGenres.add(genre);
+                    addedGenreIds.add(genre.getId());
+                }
+            }
+
+            film.setGenres(uniqueGenres);
+            final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
+            for (Genre genre : uniqueGenres) {
                 jdbcTemplate.update(genreSql, id, genre.getId());
             }
         }
 
         film.setMpa(mpaDao.getMpaById(film.getMpa().getId()).orElse(null));
-        film.setGenres(new HashSet<>(genreDao.getGenresByFilmId(film.getId())));
-
+        film.setGenres(genreDao.getGenresByFilmId(film.getId()));
         log.info("Film created id={}", id);
         return film;
     }
@@ -79,15 +87,26 @@ public class FilmDbStorage implements FilmStorage {
 
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
+            // Сохраняем порядок жанров и убираем дубликаты
+            Set<Long> addedGenreIds = new HashSet<>();
+            List<Genre> uniqueGenres = new ArrayList<>();
+
             for (Genre genre : film.getGenres()) {
+                if (!addedGenreIds.contains(genre.getId())) {
+                    uniqueGenres.add(genre);
+                    addedGenreIds.add(genre.getId());
+                }
+            }
+
+            film.setGenres(uniqueGenres);
+            final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
+            for (Genre genre : uniqueGenres) {
                 jdbcTemplate.update(genreSql, film.getId(), genre.getId());
             }
         }
 
         film.setMpa(mpaDao.getMpaById(film.getMpa().getId()).orElse(null));
-        film.setGenres(new HashSet<>(genreDao.getGenresByFilmId(film.getId())));
-
+        film.setGenres(genreDao.getGenresByFilmId(film.getId()));
         log.info("Film updated id={}", film.getId());
         return film;
     }
@@ -109,8 +128,7 @@ public class FilmDbStorage implements FilmStorage {
             Long mpaId = rs.getLong("mpa_id");
             f.setMpa(mpaDao.getMpaById(mpaId).orElse(null));
 
-            f.setGenres(new HashSet<>(genreDao.getGenresByFilmId(f.getId())));
-
+            f.setGenres(genreDao.getGenresByFilmId(f.getId()));
             return f;
         });
     }
@@ -132,14 +150,12 @@ public class FilmDbStorage implements FilmStorage {
 
                 Long mpaId = rs.getLong("mpa_id");
                 f.setMpa(mpaDao.getMpaById(mpaId).orElse(null));
-
                 return f;
             }, id);
 
             if (film != null) {
-                film.setGenres(new HashSet<>(genreDao.getGenresByFilmId(film.getId())));
+                film.setGenres(genreDao.getGenresByFilmId(film.getId()));
             }
-
             return Optional.ofNullable(film);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();

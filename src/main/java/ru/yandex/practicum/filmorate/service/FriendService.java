@@ -24,15 +24,15 @@ public class FriendService {
         if (friendDao.isFriendshipExists(id, friendId)) {
             throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
-
-        // Добавляем одностороннюю дружбу
         friendDao.addFriend(id, friendId);
         log.info("Пользователь {} добавил в друзья {}", id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
-        // Удаляем только одну связь
+        if (!friendDao.isFriendshipExists(id, friendId)) {
+            throw new NotFoundException("Дружба между пользователями не найдена");
+        }
         friendDao.removeFriend(id, friendId);
         log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }
