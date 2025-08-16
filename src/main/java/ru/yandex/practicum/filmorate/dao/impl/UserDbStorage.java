@@ -96,29 +96,4 @@ public class UserDbStorage implements UserStorage {
             return Optional.empty();
         }
     }
-
-    @Override
-    public void addFriend(Long id, Long friendId) {
-        throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");
-    }
-
-    @Override
-    public void removeFriend(Long id, Long friendId) {
-        throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");
-    }
-
-    @Override
-    public void confirmFriend(Long id, Long friendId) {
-        throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");
-    }
-
-    @Override
-    public List<User> getFriends(Long id) {
-        throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");
-    }
-
-    @Override
-    public List<User> getCommonFriends(Long id, Long otherId) {
-        throw new UnsupportedOperationException("Используйте FriendDaoImpl для операций с друзьями");
-    }
 }

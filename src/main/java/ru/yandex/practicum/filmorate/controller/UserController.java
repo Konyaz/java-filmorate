@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FriendService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final FriendService friendService;  // Добавлен FriendService
 
     @PostMapping
     public User create(@Valid @RequestBody User user) {
@@ -44,30 +46,30 @@ public class UserController {
     @PutMapping("/{id}/friends/{friendId}")
     public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("PUT /users/{}/friends/{}", id, friendId);
-        userService.addFriend(id, friendId);
+        friendService.addFriend(id, friendId);  // Используем FriendService
     }
 
     @PutMapping("/{id}/friends/{friendId}/confirm")
     public void confirmFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("PUT /users/{}/friends/{}/confirm", id, friendId);
-        userService.confirmFriend(id, friendId);
+        friendService.confirmFriend(id, friendId);  // Используем FriendService
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
     public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
         log.info("DELETE /users/{}/friends/{}", id, friendId);
-        userService.removeFriend(id, friendId);
+        friendService.removeFriend(id, friendId);  // Используем FriendService
     }
 
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable Long id) {
         log.info("GET /users/{}/friends", id);
-        return userService.getFriends(id);
+        return friendService.getFriends(id);  // Используем FriendService
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
         log.info("GET /users/{}/friends/common/{}", id, otherId);
-        return userService.getCommonFriends(id, otherId);
+        return friendService.getCommonFriends(id, otherId);  // Используем FriendService
     }
 }

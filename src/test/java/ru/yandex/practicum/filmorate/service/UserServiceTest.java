@@ -7,7 +7,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -21,10 +20,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-@Sql(scripts = {"classpath:schema.sql", "classpath:test-data.sql"})
 class UserServiceTest {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private FriendService friendService;
 
     private Long userId1;
     private Long userId2;
@@ -113,37 +114,37 @@ class UserServiceTest {
 
     @Test
     void shouldAddAndConfirmFriend() {
-        userService.addFriend(userId1, userId2);
-        userService.confirmFriend(userId2, userId1);
+        friendService.addFriend(userId1, userId2);
+        friendService.confirmFriend(userId2, userId1);
 
-        List<User> friends = userService.getFriends(userId1);
+        List<User> friends = friendService.getFriends(userId1);
         assertEquals(1, friends.size());
         assertEquals(userId2, friends.get(0).getId());
     }
 
     @Test
     void shouldThrowValidationExceptionOnSelfFriendship() {
-        assertThrows(ValidationException.class, () -> userService.addFriend(userId1, userId1));
+        assertThrows(ValidationException.class, () -> friendService.addFriend(userId1, userId1));
     }
 
     @Test
     void shouldRemoveFriend() {
-        userService.addFriend(userId1, userId2);
-        userService.confirmFriend(userId2, userId1);
-        userService.removeFriend(userId1, userId2);
+        friendService.addFriend(userId1, userId2);
+        friendService.confirmFriend(userId2, userId1);
+        friendService.removeFriend(userId1, userId2);
 
-        List<User> friends = userService.getFriends(userId1);
+        List<User> friends = friendService.getFriends(userId1);
         assertTrue(friends.isEmpty());
     }
 
     @Test
     void shouldGetCommonFriends() {
-        userService.addFriend(userId1, userId3);
-        userService.confirmFriend(userId3, userId1);
-        userService.addFriend(userId2, userId3);
-        userService.confirmFriend(userId3, userId2);
+        friendService.addFriend(userId1, userId3);
+        friendService.confirmFriend(userId3, userId1);
+        friendService.addFriend(userId2, userId3);
+        friendService.confirmFriend(userId3, userId2);
 
-        List<User> commonFriends = userService.getCommonFriends(userId1, userId2);
+        List<User> commonFriends = friendService.getCommonFriends(userId1, userId2);
         assertEquals(1, commonFriends.size());
         assertEquals(userId3, commonFriends.get(0).getId());
     }

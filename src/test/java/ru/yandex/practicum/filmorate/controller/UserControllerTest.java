@@ -9,6 +9,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FriendService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
@@ -29,6 +30,9 @@ class UserControllerTest {
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private FriendService friendService;  // Добавлен FriendService
 
     private User user1;
     private User user2;
@@ -92,7 +96,7 @@ class UserControllerTest {
 
     @Test
     void addFriend_success() throws Exception {
-        doNothing().when(userService).addFriend(1L, 2L);
+        doNothing().when(friendService).addFriend(1L, 2L);  // Используем FriendService
 
         mockMvc.perform(put("/users/1/friends/2"))
                 .andExpect(status().isOk());
@@ -100,7 +104,7 @@ class UserControllerTest {
 
     @Test
     void removeFriend_success() throws Exception {
-        doNothing().when(userService).removeFriend(1L, 2L);
+        doNothing().when(friendService).removeFriend(1L, 2L);  // Используем FriendService
 
         mockMvc.perform(delete("/users/1/friends/2"))
                 .andExpect(status().isOk());
@@ -108,7 +112,7 @@ class UserControllerTest {
 
     @Test
     void getFriends_success() throws Exception {
-        when(userService.getFriends(1L)).thenReturn(List.of(user2));
+        when(friendService.getFriends(1L)).thenReturn(List.of(user2));  // Используем FriendService
 
         mockMvc.perform(get("/users/1/friends"))
                 .andExpect(status().isOk())
@@ -123,7 +127,7 @@ class UserControllerTest {
         commonFriend.setLogin("user3");
         commonFriend.setBirthday(LocalDate.of(1992, 1, 1));
 
-        when(userService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));
+        when(friendService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));  // Используем FriendService
 
         mockMvc.perform(get("/users/1/friends/common/2"))
                 .andExpect(status().isOk())
