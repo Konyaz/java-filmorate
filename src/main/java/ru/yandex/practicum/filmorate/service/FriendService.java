@@ -25,25 +25,14 @@ public class FriendService {
             throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
 
-        // Отправляем запрос от id к friendId
-        friendDao.addFriend(id, friendId, "unconfirmed");
-        log.info("Пользователь {} добавил в друзья {} (неподтверждённая)", id, friendId);
-    }
-
-    public void confirmFriend(Long id, Long friendId) {
-        validateUserIds(id, friendId);
-        try {
-            // Подтверждаем запрос от friendId к id
-            friendDao.confirmFriendship(id, friendId);
-            log.info("Пользователь {} подтвердил дружбу с {}", id, friendId);
-        } catch (NotFoundException e) {
-            log.error("Ошибка подтверждения дружбы: {} -> {}", id, friendId, e);
-            throw new ValidationException("Невозможно подтвердить несуществующую дружбу");
-        }
+        // Добавляем одностороннюю дружбу
+        friendDao.addFriend(id, friendId);
+        log.info("Пользователь {} добавил в друзья {}", id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
+        // Удаляем только одну связь
         friendDao.removeFriend(id, friendId);
         log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }

@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -24,7 +25,7 @@ class FriendDaoImplTest {
     private FriendDaoImpl friendDao;
 
     @Autowired
-    private UserDbStorage userStorage;
+    private UserStorage userStorage;
 
     private Long userId1;
     private Long userId2;
@@ -56,30 +57,16 @@ class FriendDaoImplTest {
 
     @Test
     void testAddFriend() {
-        friendDao.addFriend(userId1, userId2, "unconfirmed");
+        friendDao.addFriend(userId1, userId2);
         List<Long> friends = friendDao.getFriends(userId1);
 
-        assertEquals(0, friends.size(), "Неподтвержденная дружба не должна отображаться");
-    }
-
-    @Test
-    void testConfirmFriend() {
-        // Добавляем запрос дружбы от user1 к user2
-        friendDao.addFriend(userId1, userId2, "unconfirmed");
-
-        // Подтверждаем запрос от user2 к user1 (обратное направление)
-        friendDao.confirmFriendship(userId2, userId1);
-
-        // Проверяем друзей у user1
-        List<Long> friends = friendDao.getFriends(userId1);
         assertEquals(1, friends.size(), "Должен быть 1 друг");
         assertEquals(userId2, friends.get(0), "ID друга должен совпадать");
     }
 
     @Test
     void testRemoveFriend() {
-        friendDao.addFriend(userId1, userId2, "unconfirmed");
-        friendDao.confirmFriendship(userId2, userId1);
+        friendDao.addFriend(userId1, userId2);
         friendDao.removeFriend(userId1, userId2);
         List<Long> friends = friendDao.getFriends(userId1);
 
@@ -87,12 +74,17 @@ class FriendDaoImplTest {
     }
 
     @Test
-    void testGetCommonFriends() {
-        friendDao.addFriend(userId1, userId3, "unconfirmed");
-        friendDao.confirmFriendship(userId3, userId1);
+    void testRemoveNonExistingFriend() {
+        assertThrows(NotFoundException.class, () ->
+                        friendDao.removeFriend(userId1, userId2),
+                "Должно выбрасываться исключение при удалении несуществующей дружбы"
+        );
+    }
 
-        friendDao.addFriend(userId2, userId3, "unconfirmed");
-        friendDao.confirmFriendship(userId3, userId2);
+    @Test
+    void testGetCommonFriends() {
+        friendDao.addFriend(userId1, userId3);
+        friendDao.addFriend(userId2, userId3);
 
         List<Long> commonFriends = friendDao.getCommonFriends(userId1, userId2);
 
@@ -102,24 +94,13 @@ class FriendDaoImplTest {
 
     @Test
     void testGetFriends() {
-        friendDao.addFriend(userId1, userId2, "unconfirmed");
-        friendDao.confirmFriendship(userId2, userId1);
-
-        friendDao.addFriend(userId1, userId3, "unconfirmed");
-        friendDao.confirmFriendship(userId3, userId1);
+        friendDao.addFriend(userId1, userId2);
+        friendDao.addFriend(userId1, userId3);
 
         List<Long> friends = friendDao.getFriends(userId1);
 
         assertEquals(2, friends.size(), "Должно быть 2 друга");
         assertTrue(friends.contains(userId2), "Должен содержать user2");
         assertTrue(friends.contains(userId3), "Должен содержать user3");
-    }
-
-    @Test
-    void testConfirmNonExistingFriendship() {
-        assertThrows(NotFoundException.class, () ->
-                        friendDao.confirmFriendship(userId1, userId2),
-                "Должно выбрасываться исключение при попытке подтвердить несуществующую дружбу"
-        );
     }
 }

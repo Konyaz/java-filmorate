@@ -113,16 +113,17 @@ class UserServiceTest {
     }
 
     @Test
-    void shouldAddAndConfirmFriend() {
-        // user1 отправляет запрос дружбы user2
+    void shouldAddFriend() {
+        // user1 добавляет в друзья user2
         friendService.addFriend(userId1, userId2);
-
-        // user2 подтверждает запрос от user1
-        friendService.confirmFriend(userId2, userId1);
 
         List<User> friends = friendService.getFriends(userId1);
         assertEquals(1, friends.size());
         assertEquals(userId2, friends.get(0).getId());
+
+        // Проверяем, что дружба односторонняя
+        List<User> user2Friends = friendService.getFriends(userId2);
+        assertTrue(user2Friends.isEmpty());
     }
 
     @Test
@@ -133,7 +134,6 @@ class UserServiceTest {
     @Test
     void shouldRemoveFriend() {
         friendService.addFriend(userId1, userId2);
-        friendService.confirmFriend(userId2, userId1);
         friendService.removeFriend(userId1, userId2);
 
         List<User> friends = friendService.getFriends(userId1);
@@ -142,15 +142,11 @@ class UserServiceTest {
 
     @Test
     void shouldGetCommonFriends() {
-        // user1 отправляет запрос user3
+        // user1 добавляет в друзья user3
         friendService.addFriend(userId1, userId3);
-        // user3 подтверждает запрос от user1
-        friendService.confirmFriend(userId3, userId1);
 
-        // user2 отправляет запрос user3
+        // user2 добавляет в друзья user3
         friendService.addFriend(userId2, userId3);
-        // user3 подтверждает запрос от user2
-        friendService.confirmFriend(userId3, userId2);
 
         List<User> commonFriends = friendService.getCommonFriends(userId1, userId2);
         assertEquals(1, commonFriends.size());

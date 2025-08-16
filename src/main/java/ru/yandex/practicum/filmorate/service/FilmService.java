@@ -5,12 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.dao.FilmStorage;
-import ru.yandex.practicum.filmorate.dao.LikeDao;
-import ru.yandex.practicum.filmorate.dao.UserStorage;
+import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -28,17 +27,21 @@ public class FilmService {
     private final UserStorage userStorage;
 
     private final LikeDao likeDao;
+    private final MpaDao mpaDao;
+    private final GenreDao genreDao;
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     public Film create(@Valid Film film) {
         validate(film);
+        validateFilmData(film);
         log.info("Создание фильма: {}", film);
         return filmStorage.create(film);
     }
 
     public Film update(@Valid Film film) {
         validate(film);
+        validateFilmData(film);
         log.info("Обновление фильма: {}", film);
         return filmStorage.update(film);
     }
@@ -92,6 +95,22 @@ public class FilmService {
         }
         if (film.getMpa().getId() == null) {
             throw new ValidationException("ID рейтинга MPA обязателен");
+        }
+    }
+
+    private void validateFilmData(Film film) {
+        // Проверка существования MPA
+        Long mpaId = film.getMpa().getId();
+        mpaDao.getMpaById(mpaId)
+                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + mpaId + " не найден"));
+
+        // Проверка существования жанров
+        if (film.getGenres() != null) {
+            for (Genre genre : film.getGenres()) {
+                Long genreId = genre.getId();
+                genreDao.getGenreById(genreId)
+                        .orElseThrow(() -> new NotFoundException("Жанр с ID " + genreId + " не найден"));
+            }
         }
     }
 }

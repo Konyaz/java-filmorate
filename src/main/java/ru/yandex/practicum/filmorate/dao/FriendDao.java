@@ -1,13 +1,13 @@
 package ru.yandex.practicum.filmorate.dao;
 
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+
 import java.util.List;
 
 public interface FriendDao {
-    void addFriend(Long userId, Long friendId, String status);
+    void addFriend(Long userId, Long friendId);
 
-    void confirmFriendship(Long userId, Long friendId);
-
-    void removeFriend(Long userId, Long friendId);
+    void removeFriend(Long userId, Long friendId) throws NotFoundException;
 
     List<Long> getFriends(Long userId);
 
