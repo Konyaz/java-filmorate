@@ -9,6 +9,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
@@ -40,6 +41,7 @@ class FilmControllerTest {
         film.setDescription("Description");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G"));
     }
 
     @Test
@@ -50,6 +52,7 @@ class FilmControllerTest {
         createdFilm.setDescription("Description");
         createdFilm.setReleaseDate(LocalDate.of(2000, 1, 1));
         createdFilm.setDuration(120);
+        createdFilm.setMpa(new Mpa(1L, "G"));
 
         when(filmService.create(any(Film.class))).thenReturn(createdFilm);
 
@@ -68,6 +71,7 @@ class FilmControllerTest {
         updatedFilm.setDescription("Updated description");
         updatedFilm.setReleaseDate(LocalDate.of(2001, 1, 1));
         updatedFilm.setDuration(150);
+        updatedFilm.setMpa(new Mpa(2L, "PG"));
 
         when(filmService.update(any(Film.class))).thenReturn(updatedFilm);
 
@@ -83,9 +87,13 @@ class FilmControllerTest {
         Film film1 = new Film();
         film1.setId(1L);
         film1.setName("Film 1");
+        film1.setMpa(new Mpa(1L, "G"));
+
         Film film2 = new Film();
         film2.setId(2L);
         film2.setName("Film 2");
+        film2.setMpa(new Mpa(2L, "PG"));
+
         when(filmService.getAll()).thenReturn(List.of(film1, film2));
 
         mockMvc.perform(get("/films"))

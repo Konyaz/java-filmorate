@@ -9,13 +9,15 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FriendService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,8 +33,12 @@ class UserControllerTest {
     @MockBean
     private UserService userService;
 
+    @MockBean
+    private FriendService friendService;
+
     private User user1;
     private User user2;
+    private User commonFriend;
 
     @BeforeEach
     void setUp() {
@@ -49,6 +55,13 @@ class UserControllerTest {
         user2.setLogin("user2");
         user2.setName("User Two");
         user2.setBirthday(LocalDate.of(1991, 1, 1));
+
+        commonFriend = new User();
+        commonFriend.setId(3L);
+        commonFriend.setEmail("user3@example.com");
+        commonFriend.setLogin("user3");
+        commonFriend.setName("User Three");
+        commonFriend.setBirthday(LocalDate.of(1992, 1, 1));
     }
 
     @Test
@@ -93,7 +106,9 @@ class UserControllerTest {
 
     @Test
     void addFriend_success() throws Exception {
-        doNothing().when(userService).addFriend(1L, 2L);
+        when(userService.getById(1L)).thenReturn(user1);
+        when(userService.getById(2L)).thenReturn(user2);
+        doNothing().when(friendService).addFriend(1L, 2L);
 
         mockMvc.perform(put("/users/1/friends/2"))
                 .andExpect(status().isOk());
@@ -101,16 +116,17 @@ class UserControllerTest {
 
     @Test
     void removeFriend_success() throws Exception {
-        doNothing().when(userService).removeFriend(1L, 2L);
+        when(userService.getById(1L)).thenReturn(user1);
+        when(userService.getById(2L)).thenReturn(user2);
+        doNothing().when(friendService).removeFriend(1L, 2L);
 
         mockMvc.perform(delete("/users/1/friends/2"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
     void getFriends_success() throws Exception {
-        user1.setFriends(Set.of(2L));
-        when(userService.getFriends(1L)).thenReturn(List.of(user2));
+        when(friendService.getFriends(1L)).thenReturn(List.of(user2));
 
         mockMvc.perform(get("/users/1/friends"))
                 .andExpect(status().isOk())
@@ -119,12 +135,10 @@ class UserControllerTest {
 
     @Test
     void getCommonFriends_success() throws Exception {
-        user1.setFriends(Set.of(2L));
-        user2.setFriends(Set.of(1L));
-        when(userService.getCommonFriends(1L, 2L)).thenReturn(List.of());
+        when(friendService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));
 
         mockMvc.perform(get("/users/1/friends/common/2"))
                 .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(List.of())));
+                .andExpect(content().json(objectMapper.writeValueAsString(List.of(commonFriend))));
     }
 }

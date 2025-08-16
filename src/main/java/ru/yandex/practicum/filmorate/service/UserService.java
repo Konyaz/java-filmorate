@@ -1,32 +1,26 @@
 package ru.yandex.practicum.filmorate.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.FriendDao;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
-
-    @Autowired
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
+    private final FriendDao friendDao;
 
     public User create(User user) {
         return userStorage.create(user);
     }
 
     public User update(User user) {
-        if (userStorage.getById(user.getId()).isEmpty()) {
-            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
-        }
         return userStorage.update(user);
     }
 
@@ -39,42 +33,40 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден"));
     }
 
-    public void addFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        if (user.getFriends().contains(friendId)) {
-            throw new ValidationException("Пользователь с ID " + friendId + " уже добавлен в друзья");
+    public void addFriend(Long userId, Long friendId) {
+        validateUserExists(userId, friendId);
+        friendDao.addFriend(userId, friendId);
+    }
+
+    public void removeFriend(Long userId, Long friendId) {
+        validateUserExists(userId, friendId);
+        friendDao.removeFriend(userId, friendId);
+    }
+
+    public List<User> getFriends(Long userId) {
+        if (!userStorage.getById(userId).isPresent()) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
         }
-        // Двусторонняя дружба, как ожидается в sprint.json
-        user.addFriend(friendId);
-        friend.addFriend(id);
-        userStorage.update(user);
-        userStorage.update(friend);
-    }
-
-    public void removeFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        // Двусторонняя дружба: удаляем обоих пользователей друг у друга
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(id);
-        userStorage.update(user);
-        userStorage.update(friend);
-    }
-
-    public List<User> getFriends(Long id) {
-        User user = getById(id);
-        return user.getFriends().stream()
-                .map(this::getById)
+        return friendDao.getFriends(userId).stream()
+                .map(id -> userStorage.getById(id)
+                        .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден")))
                 .collect(Collectors.toList());
     }
 
-    public List<User> getCommonFriends(Long id, Long otherId) {
-        User user = getById(id);
-        User other = getById(otherId);
-        return user.getFriends().stream()
-                .filter(friendId -> other.getFriends().contains(friendId))
-                .map(this::getById)
+    public List<User> getCommonFriends(Long userId, Long otherId) {
+        validateUserExists(userId, otherId);
+        return friendDao.getCommonFriends(userId, otherId).stream()
+                .map(id -> userStorage.getById(id)
+                        .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден")))
                 .collect(Collectors.toList());
+    }
+
+    private void validateUserExists(Long userId, Long friendId) {
+        if (!userStorage.getById(userId).isPresent()) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
+        }
+        if (!userStorage.getById(friendId).isPresent()) {
+            throw new NotFoundException("Пользователь с ID " + friendId + " не найден");
+        }
     }
 }
