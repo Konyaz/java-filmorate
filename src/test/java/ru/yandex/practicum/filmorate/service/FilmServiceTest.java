@@ -82,6 +82,7 @@ class FilmServiceTest {
         Film film = new Film();
         film.setId(1L);
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setMpa(new Mpa(1L, "G"));
 
         when(filmStorage.update(film)).thenThrow(new NotFoundException("Фильм не найден"));
 
@@ -210,7 +211,6 @@ class FilmServiceTest {
 
     @Test
     void getPopularFilms_success() {
-        // Создаем тестовые фильмы
         Film film1 = new Film();
         film1.setId(1L);
         film1.setName("Film 1");
@@ -226,19 +226,16 @@ class FilmServiceTest {
         film3.setName("Film 3");
         film3.setMpa(new Mpa(3L, "PG-13"));
 
-        // Настраиваем моки
         when(filmStorage.getAll()).thenReturn(List.of(film1, film2, film3));
-        when(likeDao.getLikes(1L)).thenReturn(List.of(1L, 2L)); // 2 лайка
-        when(likeDao.getLikes(2L)).thenReturn(List.of(1L));     // 1 лайк
-        when(likeDao.getLikes(3L)).thenReturn(List.of());       // 0 лайков
+        when(likeDao.getLikes(1L)).thenReturn(List.of(1L, 2L));
+        when(likeDao.getLikes(2L)).thenReturn(List.of(1L));
+        when(likeDao.getLikes(3L)).thenReturn(List.of());
 
-        // Вызываем метод
         List<Film> popularFilms = filmService.getPopularFilms(2);
 
-        // Проверяем результаты
         assertEquals(2, popularFilms.size());
-        assertEquals(1L, popularFilms.get(0).getId()); // Фильм с наибольшим количеством лайков
-        assertEquals(2L, popularFilms.get(1).getId()); // Второй по популярности
+        assertEquals(1L, popularFilms.get(0).getId());
+        assertEquals(2L, popularFilms.get(1).getId());
     }
 
     @Test

@@ -17,23 +17,29 @@ public class FriendDaoImpl implements FriendDao {
 
     @Override
     public void addFriend(Long userId, Long friendId, String status) {
-        String sql = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, ?)";
+        String sql = "MERGE INTO friends (user_id, friend_id, status) KEY (user_id, friend_id) VALUES (?, ?, ?)";
         jdbcTemplate.update(sql, userId, friendId, status);
+        log.info("Добавлена дружба: {} -> {} ({})", userId, friendId, status);
     }
 
     @Override
     public void confirmFriendship(Long userId, Long friendId) {
+        // Исправленный запрос: ищем запись в обратном направлении
         String sql = "UPDATE friends SET status = 'confirmed' WHERE user_id = ? AND friend_id = ?";
-        int updated = jdbcTemplate.update(sql, friendId, userId);
+        int updated = jdbcTemplate.update(sql, friendId, userId); // Поменяны местами
+
         if (updated == 0) {
+            log.error("Запрос на дружбу не найден: {} -> {}", friendId, userId);
             throw new NotFoundException("Запрос на дружбу не найден");
         }
+        log.info("Дружба подтверждена: {} и {}", friendId, userId);
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
         String sql = "DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
         jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        log.info("Дружба удалена: {} и {}", userId, friendId);
     }
 
     @Override
@@ -53,8 +59,8 @@ public class FriendDaoImpl implements FriendDao {
 
     @Override
     public boolean isFriendshipExists(Long userId, Long friendId) {
-        String sql = "SELECT COUNT(*) FROM friends WHERE user_id = ? AND friend_id = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, friendId);
+        String sql = "SELECT COUNT(*) FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, friendId, friendId, userId);
         return count != null && count > 0;
     }
 }

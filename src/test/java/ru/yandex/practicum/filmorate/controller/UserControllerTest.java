@@ -32,7 +32,7 @@ class UserControllerTest {
     private UserService userService;
 
     @MockBean
-    private FriendService friendService;  // Добавлен FriendService
+    private FriendService friendService;
 
     private User user1;
     private User user2;
@@ -96,7 +96,7 @@ class UserControllerTest {
 
     @Test
     void addFriend_success() throws Exception {
-        doNothing().when(friendService).addFriend(1L, 2L);  // Используем FriendService
+        doNothing().when(friendService).addFriend(1L, 2L);
 
         mockMvc.perform(put("/users/1/friends/2"))
                 .andExpect(status().isOk());
@@ -104,7 +104,7 @@ class UserControllerTest {
 
     @Test
     void removeFriend_success() throws Exception {
-        doNothing().when(friendService).removeFriend(1L, 2L);  // Используем FriendService
+        doNothing().when(friendService).removeFriend(1L, 2L);
 
         mockMvc.perform(delete("/users/1/friends/2"))
                 .andExpect(status().isOk());
@@ -112,7 +112,7 @@ class UserControllerTest {
 
     @Test
     void getFriends_success() throws Exception {
-        when(friendService.getFriends(1L)).thenReturn(List.of(user2));  // Используем FriendService
+        when(friendService.getFriends(1L)).thenReturn(List.of(user2));
 
         mockMvc.perform(get("/users/1/friends"))
                 .andExpect(status().isOk())
@@ -127,7 +127,7 @@ class UserControllerTest {
         commonFriend.setLogin("user3");
         commonFriend.setBirthday(LocalDate.of(1992, 1, 1));
 
-        when(friendService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));  // Используем FriendService
+        when(friendService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));
 
         mockMvc.perform(get("/users/1/friends/common/2"))
                 .andExpect(status().isOk())

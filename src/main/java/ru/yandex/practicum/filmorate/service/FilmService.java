@@ -90,5 +90,8 @@ public class FilmService {
         if (film.getMpa() == null) {
             throw new ValidationException("Рейтинг MPA обязателен");
         }
+        if (film.getMpa().getId() == null) {
+            throw new ValidationException("ID рейтинга MPA обязателен");
+        }
     }
 }

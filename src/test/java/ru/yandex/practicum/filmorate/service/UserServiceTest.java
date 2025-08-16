@@ -114,7 +114,10 @@ class UserServiceTest {
 
     @Test
     void shouldAddAndConfirmFriend() {
+        // user1 отправляет запрос дружбы user2
         friendService.addFriend(userId1, userId2);
+
+        // user2 подтверждает запрос от user1
         friendService.confirmFriend(userId2, userId1);
 
         List<User> friends = friendService.getFriends(userId1);
@@ -139,9 +142,14 @@ class UserServiceTest {
 
     @Test
     void shouldGetCommonFriends() {
+        // user1 отправляет запрос user3
         friendService.addFriend(userId1, userId3);
+        // user3 подтверждает запрос от user1
         friendService.confirmFriend(userId3, userId1);
+
+        // user2 отправляет запрос user3
         friendService.addFriend(userId2, userId3);
+        // user3 подтверждает запрос от user2
         friendService.confirmFriend(userId3, userId2);
 
         List<User> commonFriends = friendService.getCommonFriends(userId1, userId2);

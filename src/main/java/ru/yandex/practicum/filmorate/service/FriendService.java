@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.FriendDao;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.dao.UserStorage;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,14 +25,21 @@ public class FriendService {
             throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
 
+        // Отправляем запрос от id к friendId
         friendDao.addFriend(id, friendId, "unconfirmed");
         log.info("Пользователь {} добавил в друзья {} (неподтверждённая)", id, friendId);
     }
 
     public void confirmFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
-        friendDao.confirmFriendship(id, friendId);
-        log.info("Пользователь {} подтвердил дружбу с {}", id, friendId);
+        try {
+            // Подтверждаем запрос от friendId к id
+            friendDao.confirmFriendship(id, friendId);
+            log.info("Пользователь {} подтвердил дружбу с {}", id, friendId);
+        } catch (NotFoundException e) {
+            log.error("Ошибка подтверждения дружбы: {} -> {}", id, friendId, e);
+            throw new ValidationException("Невозможно подтвердить несуществующую дружбу");
+        }
     }
 
     public void removeFriend(Long id, Long friendId) {
