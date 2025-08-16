@@ -12,5 +12,5 @@ public interface UserStorage {
 
     List<User> getAll();
 
-    Optional<User> getById(Long id);
+    Optional<User> getById(Long id); // Возвращает Optional
 }

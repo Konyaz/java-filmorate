@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.FriendDao;
-import ru.yandex.practicum.filmorate.dao.UserStorage;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -16,7 +14,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FriendService {
-    private final UserStorage userStorage;
+    private final UserService userService; // Используем UserService вместо UserStorage
     private final FriendDao friendDao;
 
     public void addFriend(Long id, Long friendId) {
@@ -30,24 +28,21 @@ public class FriendService {
 
     public void removeFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
-        if (!friendDao.isFriendshipExists(id, friendId)) {
-            throw new NotFoundException("Дружба между пользователями не найдена");
-        }
         friendDao.removeFriend(id, friendId);
         log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }
 
     public List<User> getFriends(Long id) {
-        getUserOrThrow(id);
+        userService.getById(id); // Проверка существования пользователя
         return friendDao.getFriends(id).stream()
-                .map(this::getUserOrThrow)
+                .map(userService::getById) // Получаем пользователя через сервис
                 .collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(Long id, Long otherId) {
         validateUserIds(id, otherId);
         return friendDao.getCommonFriends(id, otherId).stream()
-                .map(this::getUserOrThrow)
+                .map(userService::getById)
                 .collect(Collectors.toList());
     }
 
@@ -55,12 +50,8 @@ public class FriendService {
         if (id.equals(friendId)) {
             throw new ValidationException("Пользователь не может добавить себя в друзья");
         }
-        getUserOrThrow(id);
-        getUserOrThrow(friendId);
-    }
-
-    private User getUserOrThrow(Long id) {
-        return userStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден"));
+        // Проверяем существование пользователей через сервис
+        userService.getById(id);
+        userService.getById(friendId);
     }
 }

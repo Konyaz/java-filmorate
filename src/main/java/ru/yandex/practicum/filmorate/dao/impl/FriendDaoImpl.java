@@ -23,11 +23,11 @@ public class FriendDaoImpl implements FriendDao {
     }
 
     @Override
-    public void removeFriend(Long userId, Long friendId) throws NotFoundException {
+    public void removeFriend(Long userId, Long friendId) {
         String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-        int rows = jdbcTemplate.update(sql, userId, friendId);
-        if (rows == 0) {
-            throw new NotFoundException("Дружба между пользователями " + userId + " и " + friendId + " не найдена");
+        int rowsDeleted = jdbcTemplate.update(sql, userId, friendId);
+        if (rowsDeleted == 0) {
+            throw new NotFoundException("Дружба между пользователями не найдена");
         }
         log.info("Дружба удалена: {} -> {}", userId, friendId);
     }
