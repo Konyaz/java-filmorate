@@ -30,9 +30,6 @@ public class FriendService {
 
     public void removeFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
-        if (!friendDao.isFriendshipExists(id, friendId)) {
-            throw new NotFoundException("Дружба между пользователями не найдена");
-        }
         friendDao.removeFriend(id, friendId);
         log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }
