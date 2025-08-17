@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.FriendDao;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
 import java.util.List;
 
@@ -24,7 +25,12 @@ public class FriendDaoImpl implements FriendDao {
     @Override
     public void removeFriend(Long userId, Long friendId) {
         String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
-        jdbcTemplate.update(sql, userId, friendId);
+        int rowsDeleted = jdbcTemplate.update(sql, userId, friendId);
+
+        if (rowsDeleted == 0) {
+            throw new NotFoundException("Дружба не найдена");
+        }
+
         log.info("Дружба удалена: {} -> {}", userId, friendId);
     }
 

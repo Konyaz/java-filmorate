@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.dao.FriendDao;
 import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -19,6 +20,7 @@ public class FriendService {
     private final UserStorage userStorage;
     private final FriendDao friendDao;
 
+    @Transactional
     public void addFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
 
@@ -26,20 +28,20 @@ public class FriendService {
             throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
 
-        // Добавляем двустороннюю дружбу
+        // Добавляем дружбу только в одном направлении
         friendDao.addFriend(id, friendId);
-        friendDao.addFriend(friendId, id);
-
         log.info("Пользователь {} добавил в друзья {}", id, friendId);
     }
 
+    @Transactional
     public void removeFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
 
-        // Удаляем двустороннюю дружбу
-        friendDao.removeFriend(id, friendId);
-        friendDao.removeFriend(friendId, id);
+        if (!friendDao.isFriendshipExists(id, friendId)) {
+            throw new NotFoundException("Дружба между пользователями не найдена");
+        }
 
+        friendDao.removeFriend(id, friendId);
         log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }
 
