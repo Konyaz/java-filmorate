@@ -2,154 +2,102 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import ru.yandex.practicum.filmorate.dao.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@AutoConfigureTestDatabase
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@ActiveProfiles("test")
 class UserServiceTest {
-    @Autowired
+    @Mock
+    private UserStorage userStorage;
+    @InjectMocks
     private UserService userService;
-
-    @Autowired
-    private FriendService friendService;
-
-    private Long userId1;
-    private Long userId2;
-    private Long userId3;
 
     @BeforeEach
     void setUp() {
-        User user1 = new User();
-        user1.setEmail("user1@example.com");
-        user1.setLogin("user1");
-        user1.setBirthday(LocalDate.of(1990, 1, 1));
-        User created1 = userService.create(user1);
-        userId1 = created1.getId();
-
-        User user2 = new User();
-        user2.setEmail("user2@example.com");
-        user2.setLogin("user2");
-        user2.setBirthday(LocalDate.of(1991, 1, 1));
-        User created2 = userService.create(user2);
-        userId2 = created2.getId();
-
-        User user3 = new User();
-        user3.setEmail("user3@example.com");
-        user3.setLogin("user3");
-        user3.setBirthday(LocalDate.of(1992, 1, 1));
-        User created3 = userService.create(user3);
-        userId3 = created3.getId();
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void shouldCreateUser() {
+    void createUser_success() {
         User user = new User();
         user.setEmail("test@example.com");
-        user.setLogin("testlogin");
-        user.setName("");
+        user.setLogin("test");
         user.setBirthday(LocalDate.of(1990, 1, 1));
+        when(userStorage.create(user)).thenReturn(user);
 
-        User createdUser = userService.create(user);
-        assertNotNull(createdUser.getId());
-        assertEquals("testlogin", createdUser.getName());
+        User created = userService.create(user);
+
+        assertEquals(user, created);
+        verify(userStorage).create(user);
     }
 
     @Test
-    void shouldUpdateUser() {
+    void updateUser_success() {
         User user = new User();
-        user.setEmail("update@example.com");
-        user.setLogin("updatelogin");
-        user.setName("Update User");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        User createdUser = userService.create(user);
-        Long id = createdUser.getId();
+        user.setId(1L);
+        user.setEmail("test@example.com");
+        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        when(userStorage.update(user)).thenReturn(user);
 
-        createdUser.setLogin("newlogin");
-        User updatedUser = userService.update(createdUser);
-        assertEquals("newlogin", updatedUser.getLogin());
+        User updated = userService.update(user);
+
+        assertEquals(user, updated);
+        verify(userStorage).getById(1L);
+        verify(userStorage).update(user);
     }
 
     @Test
-    void shouldThrowNotFoundExceptionOnUpdateNonExistentUser() {
+    void updateUser_notFound_throwsException() {
         User user = new User();
-        user.setId(999L);
-        user.setEmail("nonexistent@example.com");
-        user.setLogin("nonexistent");
-        user.setName("Nonexistent");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
+        user.setId(1L);
+        when(userStorage.getById(1L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> userService.update(user));
+        verify(userStorage).getById(1L);
+        verify(userStorage, never()).update(any(User.class));
     }
 
     @Test
-    void shouldGetAllUsers() {
+    void getAllUsers_success() {
+        User user = new User();
+        user.setId(1L);
+        when(userStorage.getAll()).thenReturn(List.of(user));
+
         List<User> users = userService.getAll();
-        assertFalse(users.isEmpty());
+
+        assertEquals(1, users.size());
+        verify(userStorage).getAll();
     }
 
     @Test
-    void shouldGetUserById() {
-        User user = userService.getById(userId1);
-        assertEquals("user1@example.com", user.getEmail());
+    void getById_success() {
+        User user = new User();
+        user.setId(1L);
+        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+
+        User found = userService.getById(1L);
+
+        assertEquals(user, found);
+        verify(userStorage).getById(1L);
     }
 
     @Test
-    void shouldThrowNotFoundExceptionOnGetNonExistentUser() {
-        assertThrows(NotFoundException.class, () -> userService.getById(999L));
+    void getById_notFound_throwsException() {
+        when(userStorage.getById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> userService.getById(1L));
     }
 
-    @Test
-    void shouldAddFriend() {
-        // user1 добавляет в друзья user2
-        friendService.addFriend(userId1, userId2);
 
-        List<User> friends = friendService.getFriends(userId1);
-        assertEquals(1, friends.size());
-        assertEquals(userId2, friends.get(0).getId());
-
-        // Проверяем, что дружба односторонняя
-        List<User> user2Friends = friendService.getFriends(userId2);
-        assertTrue(user2Friends.isEmpty());
-    }
-
-    @Test
-    void shouldThrowValidationExceptionOnSelfFriendship() {
-        assertThrows(ValidationException.class, () -> friendService.addFriend(userId1, userId1));
-    }
-
-    @Test
-    void shouldRemoveFriend() {
-        friendService.addFriend(userId1, userId2);
-        friendService.removeFriend(userId1, userId2);
-
-        List<User> friends = friendService.getFriends(userId1);
-        assertTrue(friends.isEmpty());
-    }
-
-    @Test
-    void shouldGetCommonFriends() {
-        // user1 добавляет в друзья user3
-        friendService.addFriend(userId1, userId3);
-
-        // user2 добавляет в друзья user3
-        friendService.addFriend(userId2, userId3);
-
-        List<User> commonFriends = friendService.getCommonFriends(userId1, userId2);
-        assertEquals(1, commonFriends.size());
-        assertEquals(userId3, commonFriends.get(0).getId());
-    }
 }

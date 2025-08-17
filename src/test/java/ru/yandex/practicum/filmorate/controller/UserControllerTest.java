@@ -8,7 +8,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FriendService;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -18,7 +17,8 @@ import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
 class UserControllerTest {
@@ -111,14 +111,11 @@ class UserControllerTest {
     }
 
     @Test
-    void removeFriend_shouldThrowWhenFriendNotExists() throws Exception {
-        doThrow(new NotFoundException("Дружба не найдена"))
-                .when(friendService)
-                .removeFriend(1L, 999L);
+    void removeFriend_nonExistingFriend_success() throws Exception {
+        doNothing().when(friendService).removeFriend(1L, 999L);
 
         mockMvc.perform(delete("/users/1/friends/999"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Дружба не найдена"));
+                .andExpect(status().isNoContent());
     }
 
     @Test

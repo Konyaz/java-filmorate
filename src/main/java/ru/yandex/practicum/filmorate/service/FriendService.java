@@ -21,16 +21,25 @@ public class FriendService {
 
     public void addFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
+
         if (friendDao.isFriendshipExists(id, friendId)) {
             throw new ValidationException("Пользователь " + friendId + " уже в друзьях у " + id);
         }
+
+        // Добавляем двустороннюю дружбу
         friendDao.addFriend(id, friendId);
+        friendDao.addFriend(friendId, id);
+
         log.info("Пользователь {} добавил в друзья {}", id, friendId);
     }
 
     public void removeFriend(Long id, Long friendId) {
         validateUserIds(id, friendId);
+
+        // Удаляем двустороннюю дружбу
         friendDao.removeFriend(id, friendId);
+        friendDao.removeFriend(friendId, id);
+
         log.info("Пользователь {} удалил из друзей {}", id, friendId);
     }
 

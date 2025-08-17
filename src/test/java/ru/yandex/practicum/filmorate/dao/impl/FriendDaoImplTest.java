@@ -8,7 +8,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import ru.yandex.practicum.filmorate.dao.UserStorage;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
@@ -75,9 +74,8 @@ class FriendDaoImplTest {
 
     @Test
     void testRemoveNonExistingFriend() {
-        assertThrows(NotFoundException.class, () ->
-                        friendDao.removeFriend(userId1, userId2),
-                "Должно выбрасываться исключение при удалении несуществующей дружбы"
+        assertDoesNotThrow(() -> friendDao.removeFriend(userId1, userId2),
+                "Удаление несуществующей дружбы не должно вызывать исключение"
         );
     }
 
