@@ -30,4 +30,12 @@ public class Film {
     private Mpa mpa;
 
     private List<Genre> genres = new ArrayList<>();
+
+    // Новый метод для удобства
+    public void setMpaId(Long mpaId) {
+        if (mpa == null) {
+            mpa = new Mpa();
+        }
+        mpa.setId(mpaId);
+    }
 }

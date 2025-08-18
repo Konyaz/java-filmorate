@@ -16,7 +16,7 @@ public class LikeDaoImpl implements LikeDao {
 
     @Override
     public void addLike(Long filmId, Long userId) {
-        final String sql = "MERGE INTO likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)";
+        final String sql = "INSERT INTO likes (film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, filmId, userId);
         log.info("Like added: filmId={}, userId={}", filmId, userId);
     }
@@ -24,8 +24,12 @@ public class LikeDaoImpl implements LikeDao {
     @Override
     public void removeLike(Long filmId, Long userId) {
         final String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
-        jdbcTemplate.update(sql, filmId, userId);
-        log.info("Like removed: filmId={}, userId={}", filmId, userId);
+        int deleted = jdbcTemplate.update(sql, filmId, userId);
+        if (deleted > 0) {
+            log.info("Like removed: filmId={}, userId={}", filmId, userId);
+        } else {
+            log.info("Like not found: filmId={}, userId={}", filmId, userId);
+        }
     }
 
     @Override

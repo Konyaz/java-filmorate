@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -20,12 +19,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
-    @Qualifier("filmDbStorage")
-    private final FilmDao filmStorage;
-
-    @Qualifier("userDbStorage")
-    private final UserDao userStorage;
-
+    private final FilmDao filmDao;
+    private final UserDao userDao;
     private final LikeDao likeDao;
     private final MpaDao mpaDao;
     private final GenreDao genreDao;
@@ -36,30 +31,30 @@ public class FilmService {
         validate(film);
         validateFilmData(film);
         log.info("Создание фильма: {}", film);
-        return filmStorage.create(film);
+        return filmDao.create(film);
     }
 
     public Film update(@Valid Film film) {
         validate(film);
         validateFilmData(film);
         log.info("Обновление фильма: {}", film);
-        return filmStorage.update(film);
+        return filmDao.update(film);
     }
 
     public List<Film> getAll() {
         log.info("Получение всех фильмов");
-        return filmStorage.getAll();
+        return filmDao.getAll();
     }
 
     public Film getById(Long id) {
         log.info("Получение фильма с ID: {}", id);
-        return filmStorage.getById(id)
+        return filmDao.getById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
     }
 
     public void addLike(Long filmId, Long userId) {
-        getById(filmId);
-        userStorage.getById(userId)
+        Film film = getById(filmId);
+        userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
         likeDao.addLike(filmId, userId);
@@ -67,8 +62,8 @@ public class FilmService {
     }
 
     public void removeLike(Long filmId, Long userId) {
-        getById(filmId);
-        userStorage.getById(userId)
+        Film film = getById(filmId);
+        userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
         likeDao.removeLike(filmId, userId);
@@ -77,7 +72,7 @@ public class FilmService {
 
     public List<Film> getPopularFilms(int count) {
         log.info("Получение {} популярных фильмов", count);
-        return filmStorage.getAll().stream()
+        return filmDao.getAll().stream()
                 .sorted(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()))
                 .limit(count)
                 .collect(Collectors.toList());
@@ -99,12 +94,10 @@ public class FilmService {
     }
 
     private void validateFilmData(Film film) {
-        // Проверка существования MPA
         Long mpaId = film.getMpa().getId();
         mpaDao.getMpaById(mpaId)
                 .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + mpaId + " не найден"));
 
-        // Проверка существования жанров
         if (film.getGenres() != null) {
             for (Genre genre : film.getGenres()) {
                 Long genreId = genre.getId();
