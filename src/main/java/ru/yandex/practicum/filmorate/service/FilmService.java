@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FilmService {
     @Qualifier("filmDbStorage")
-    private final FilmStorage filmStorage;
+    private final FilmDao filmStorage;
 
     @Qualifier("userDbStorage")
-    private final UserStorage userStorage;
+    private final UserDao userStorage;
 
     private final LikeDao likeDao;
     private final MpaDao mpaDao;

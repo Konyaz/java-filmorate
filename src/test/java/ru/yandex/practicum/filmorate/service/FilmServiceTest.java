@@ -26,10 +26,10 @@ class FilmServiceTest {
     private AutoCloseable closeable;
 
     @Mock
-    private FilmStorage filmStorage;
+    private FilmDao filmStorage;
 
     @Mock
-    private UserStorage userStorage;
+    private UserDao userStorage;
 
     @Mock
     private LikeDao likeDao;

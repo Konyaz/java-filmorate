@@ -27,10 +27,10 @@ class LikeDaoImplTest {
     private LikeDaoImpl likeDao;
 
     @Autowired
-    private FilmDbStorage filmStorage;
+    private FilmDaoImpl filmStorage;
 
     @Autowired
-    private UserDbStorage userStorage;
+    private UserDaoImpl userStorage;
 
     @Autowired
     private MpaDao mpaDao;

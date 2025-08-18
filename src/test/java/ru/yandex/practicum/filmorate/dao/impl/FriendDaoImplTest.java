@@ -7,7 +7,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import ru.yandex.practicum.filmorate.dao.UserStorage;
+import ru.yandex.practicum.filmorate.dao.UserDao;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
@@ -24,7 +24,7 @@ class FriendDaoImplTest {
     private FriendDaoImpl friendDao;
 
     @Autowired
-    private UserStorage userStorage;
+    private UserDao userStorage;
 
     private Long userId1;
     private Long userId2;

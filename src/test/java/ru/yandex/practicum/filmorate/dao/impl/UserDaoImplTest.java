@@ -19,10 +19,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @JdbcTest
 @AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@Import(UserDbStorage.class)
-class UserDbStorageTest {
+@Import(UserDaoImpl.class)
+class UserDaoImplTest {
     @Autowired
-    private UserDbStorage userStorage;
+    private UserDaoImpl userStorage;
 
     private User testUser;
 
