@@ -4,43 +4,26 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
 public class User {
     private Long id;
 
-    @Email(message = "Email должен быть корректным")
-    @NotBlank(message = "Email не может быть пустым")
+    @NotBlank(message = "Электронная почта не может быть пустой")
+    @Email(message = "Электронная почта должна быть валидной")
     private String email;
 
-    @NotBlank(message = "Логин не может быть пустым")
-    @Pattern(regexp = "^\\S*$", message = "Логин не может содержать пробелы")
+    @NotBlank(message = "Логин не может быть пустым и не должен содержать пробелы")
+    @Pattern(regexp = "\\S+", message = "Логин не может быть пустым и не должен содержать пробелы")
     private String login;
 
     private String name;
 
-    @Past(message = "Дата рождения должна быть в прошлом")
     @NotNull(message = "Дата рождения обязательна")
+    @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 
-    private Set<Long> friends = new HashSet<>();
-
-    // Переопределенный сеттер для name
-    public void setName(String name) {
-        if (name == null || name.isBlank()) {
-            this.name = this.login;
-        } else {
-            this.name = name;
-        }
-    }
-
-    public void addFriend(Long friendId) {
-        friends.add(friendId);
-    }
-
-    public void removeFriend(Long friendId) {
-        friends.remove(friendId);
+    public String getName() {
+        return (name == null || name.trim().isEmpty()) ? login : name;
     }
 }

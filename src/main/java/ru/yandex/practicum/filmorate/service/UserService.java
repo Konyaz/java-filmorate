@@ -1,80 +1,49 @@
 package ru.yandex.practicum.filmorate.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.dao.UserDao;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    private final UserStorage userStorage;
+    @Qualifier("userDbStorage")
+    private final UserDao userStorage;
 
-    @Autowired
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
-
-    public User create(User user) {
+    public User create(@Valid User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
+        log.info("Создание пользователя: {}", user);
         return userStorage.create(user);
     }
 
-    public User update(User user) {
-        if (userStorage.getById(user.getId()).isEmpty()) {
-            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
+    public User update(@Valid User user) {
+        userStorage.getById(user.getId())
+                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + user.getId() + " не найден"));
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
+        log.info("Обновление пользователя: {}", user);
         return userStorage.update(user);
     }
 
     public List<User> getAll() {
+        log.info("Получение всех пользователей");
         return userStorage.getAll();
     }
 
     public User getById(Long id) {
+        log.info("Получение пользователя с ID: {}", id);
         return userStorage.getById(id)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден"));
-    }
-
-    public void addFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        if (user.getFriends().contains(friendId)) {
-            throw new ValidationException("Пользователь с ID " + friendId + " уже добавлен в друзья");
-        }
-        // Двусторонняя дружба, как ожидается в sprint.json
-        user.addFriend(friendId);
-        friend.addFriend(id);
-        userStorage.update(user);
-        userStorage.update(friend);
-    }
-
-    public void removeFriend(Long id, Long friendId) {
-        User user = getById(id);
-        User friend = getById(friendId);
-        // Двусторонняя дружба: удаляем обоих пользователей друг у друга
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(id);
-        userStorage.update(user);
-        userStorage.update(friend);
-    }
-
-    public List<User> getFriends(Long id) {
-        User user = getById(id);
-        return user.getFriends().stream()
-                .map(this::getById)
-                .collect(Collectors.toList());
-    }
-
-    public List<User> getCommonFriends(Long id, Long otherId) {
-        User user = getById(id);
-        User other = getById(otherId);
-        return user.getFriends().stream()
-                .filter(friendId -> other.getFriends().contains(friendId))
-                .map(this::getById)
-                .collect(Collectors.toList());
     }
 }

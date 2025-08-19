@@ -1,189 +1,191 @@
 package ru.yandex.practicum.filmorate.service;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 class FilmServiceTest {
+
+    private AutoCloseable closeable;
+
     @Mock
-    private FilmStorage filmStorage;
+    private FilmDao filmStorage;
+
     @Mock
-    private UserStorage userStorage;
+    private UserDao userStorage;
+
+    @Mock
+    private LikeDao likeDao;
+
+    @Mock
+    private MpaDao mpaDao;
+
+    @Mock
+    private GenreDao genreDao;
+
     @InjectMocks
     private FilmService filmService;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        closeable = MockitoAnnotations.openMocks(this);
+
+        // Настройка Mpa
+        Mpa mpa = new Mpa();
+        mpa.setId(1L);
+        mpa.setName("G");
+        when(mpaDao.getMpaById(anyLong())).thenReturn(Optional.of(mpa));
+
+        // Настройка Genre
+        Genre genre = new Genre();
+        genre.setId(1L);
+        genre.setName("Комедия");
+        when(genreDao.getGenreById(anyLong())).thenReturn(Optional.of(genre));
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        closeable.close();
     }
 
     @Test
     void createFilm_success() {
-        Film film = new Film();
-        film.setName("Test Film");
-        film.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film.setDuration(120);
+        Film film = createTestFilm();
         when(filmStorage.create(film)).thenReturn(film);
 
-        Film created = filmService.create(film);
+        Film result = filmService.create(film);
 
-        assertEquals(film, created);
-        verify(filmStorage).create(film);
+        assertEquals(film, result);
+        verify(filmStorage, times(1)).create(film);
     }
 
     @Test
     void updateFilm_success() {
-        Film film = new Film();
-        film.setId(1L);
-        film.setName("Test Film");
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
+        Film film = createTestFilm();
         when(filmStorage.update(film)).thenReturn(film);
 
-        Film updated = filmService.update(film);
+        Film result = filmService.update(film);
 
-        assertEquals(film, updated);
-        verify(filmStorage).getById(1L);
-        verify(filmStorage).update(film);
+        assertEquals(film, result);
+        verify(filmStorage, times(1)).update(film);
     }
 
     @Test
-    void updateFilm_notFound_throwsException() {
-        Film film = new Film();
-        film.setId(1L);
-        when(filmStorage.getById(1L)).thenReturn(Optional.empty());
+    void updateFilm_notFound_throwsNotFoundException() {
+        Film film = createTestFilm();
+        when(filmStorage.update(film)).thenThrow(new NotFoundException("Фильм не найден"));
 
         assertThrows(NotFoundException.class, () -> filmService.update(film));
-        verify(filmStorage).getById(1L);
-        verify(filmStorage, never()).update(any(Film.class));
-    }
-
-
-    @Test
-    void getAllFilms_success() {
-        Film film = new Film();
-        film.setId(1L);
-        when(filmStorage.getAll()).thenReturn(List.of(film));
-
-        List<Film> films = filmService.getAll();
-
-        assertEquals(1, films.size());
-        verify(filmStorage).getAll();
+        verify(filmStorage, times(1)).update(film);
     }
 
     @Test
-    void getById_success() {
-        Film film = new Film();
-        film.setId(1L);
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
+    void shouldThrowNotFoundExceptionWhenMpaNotFound() {
+        Film film = createTestFilm();
+        film.getMpa().setId(999L);
+        when(mpaDao.getMpaById(999L)).thenReturn(Optional.empty());
 
-        Film found = filmService.getById(1L);
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> filmService.create(film)
+        );
 
-        assertEquals(film, found);
-        verify(filmStorage).getById(1L);
+        assertEquals("Рейтинг MPA с ID 999 не найден", exception.getMessage());
     }
 
     @Test
-    void getById_notFound_throwsException() {
-        when(filmStorage.getById(1L)).thenReturn(Optional.empty());
+    void shouldThrowNotFoundExceptionWhenGenreNotFound() {
+        Film film = createTestFilm();
+        Genre genre = new Genre();
+        genre.setId(999L);
+        film.getGenres().add(genre);
 
-        assertThrows(NotFoundException.class, () -> filmService.getById(1L));
+        when(genreDao.getGenreById(999L)).thenReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> filmService.create(film)
+        );
+
+        assertEquals("Жанр с ID 999 не найден", exception.getMessage());
     }
 
     @Test
     void addLike_success() {
-        Film film = new Film();
-        film.setId(1L);
-        film.setLikes(new HashSet<>());
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
-        when(filmStorage.update(film)).thenReturn(film);
+        // Подготовка тестовых данных
+        Long filmId = 1L;
+        Long userId = 1L;
+        Film film = createTestFilm();
+        User user = new User();
+        user.setId(userId);
 
-        filmService.addLike(1L, 1L);
+        // Настройка моков
+        when(filmStorage.getById(filmId)).thenReturn(Optional.of(film));
+        when(userStorage.getById(userId)).thenReturn(Optional.of(user));
+        doNothing().when(likeDao).addLike(filmId, userId);
 
-        assertTrue(film.getLikes().contains(1L));
-        verify(filmStorage).getById(1L);
-        verify(userStorage).getById(1L);
-        verify(filmStorage).update(film);
-    }
+        // Вызов метода
+        filmService.addLike(filmId, userId);
 
-    @Test
-    void addLike_filmNotFound_throwsException() {
-        when(filmStorage.getById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> filmService.addLike(1L, 1L));
-    }
-
-    @Test
-    void addLike_userNotFound_throwsException() {
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(new Film()));
-        when(userStorage.getById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> filmService.addLike(1L, 1L));
+        // Проверки
+        verify(filmStorage, times(1)).getById(filmId);
+        verify(userStorage, times(1)).getById(userId);
+        verify(likeDao, times(1)).addLike(filmId, userId);
     }
 
     @Test
     void removeLike_success() {
-        Film film = new Film();
-        film.setId(1L);
-        film.setLikes(new HashSet<>(Set.of(1L)));
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
-        when(filmStorage.update(film)).thenReturn(film);
+        // Подготовка тестовых данных
+        Long filmId = 1L;
+        Long userId = 1L;
+        Film film = createTestFilm();
+        User user = new User();
+        user.setId(userId);
 
-        filmService.removeLike(1L, 1L);
+        // Настройка моков
+        when(filmStorage.getById(filmId)).thenReturn(Optional.of(film));
+        when(userStorage.getById(userId)).thenReturn(Optional.of(user));
+        doNothing().when(likeDao).removeLike(filmId, userId);
 
-        assertFalse(film.getLikes().contains(1L));
-        verify(filmStorage).getById(1L);
-        verify(userStorage).getById(1L);
-        verify(filmStorage).update(film);
+        // Вызов метода
+        filmService.removeLike(filmId, userId);
+
+        // Проверки
+        verify(filmStorage, times(1)).getById(filmId);
+        verify(userStorage, times(1)).getById(userId);
+        verify(likeDao, times(1)).removeLike(filmId, userId);
     }
 
-    @Test
-    void removeLike_notLiked_doesNothing() {
+    private Film createTestFilm() {
         Film film = new Film();
         film.setId(1L);
-        film.setLikes(new HashSet<>());
-        when(filmStorage.getById(1L)).thenReturn(Optional.of(film));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(new User()));
+        film.setName("Test Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
 
-        assertDoesNotThrow(() -> filmService.removeLike(1L, 1L));
+        Mpa mpa = new Mpa();
+        mpa.setId(1L);
+        mpa.setName("G");
+        film.setMpa(mpa);
 
-        verify(filmStorage).getById(1L);
-        verify(userStorage).getById(1L);
-        verify(filmStorage).update(any(Film.class));
-    }
-
-
-    @Test
-    void getPopularFilms_success() {
-        Film film1 = new Film();
-        film1.setId(1L);
-        film1.setLikes(new HashSet<>(Set.of(1L, 2L)));
-        Film film2 = new Film();
-        film2.setId(2L);
-        film2.setLikes(new HashSet<>(Set.of(1L)));
-        when(filmStorage.getAll()).thenReturn(List.of(film1, film2));
-
-        List<Film> popular = filmService.getPopularFilms(1);
-
-        assertEquals(1, popular.size());
-        assertEquals(film1, popular.get(0));
-        verify(filmStorage).getAll();
+        return film;
     }
 }

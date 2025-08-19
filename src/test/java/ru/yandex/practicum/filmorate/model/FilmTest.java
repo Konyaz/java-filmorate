@@ -21,6 +21,7 @@ class FilmTest {
         film.setDescription("Valid description under 200 chars");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G")); // Added MPA
 
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
         assertTrue(violations.isEmpty(), "Валидный фильм не должен иметь нарушений");
@@ -33,10 +34,11 @@ class FilmTest {
         film.setDescription("Valid description");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G")); // Added MPA to isolate name violation
 
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
         assertFalse(violations.isEmpty(), "Пустое название должно вызывать ошибку");
-        assertEquals(1, violations.size());
+        assertEquals(1, violations.size(), "Должно быть только одно нарушение для пустого имени");
     }
 
     @Test
@@ -46,6 +48,7 @@ class FilmTest {
         film.setDescription("a".repeat(201));
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G")); // Added MPA
 
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
         assertFalse(violations.isEmpty(), "Описание >200 символов должно вызывать ошибку");
@@ -58,6 +61,7 @@ class FilmTest {
         film.setDescription("Valid description");
         film.setReleaseDate(LocalDate.of(1895, 12, 27));
         film.setDuration(120);
+        film.setMpa(new Mpa(1L, "G")); // Added MPA
 
         assertThrows(ValidationException.class, () -> {
             if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
@@ -73,6 +77,7 @@ class FilmTest {
         film.setDescription("Valid description");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(-120);
+        film.setMpa(new Mpa(1L, "G")); // Added MPA
 
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
         assertFalse(violations.isEmpty(), "Отрицательная продолжительность должна вызывать ошибку");

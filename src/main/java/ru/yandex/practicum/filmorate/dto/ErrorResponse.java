@@ -1,21 +1,19 @@
 package ru.yandex.practicum.filmorate.dto;
 
-import java.time.LocalDateTime;
-
 public class ErrorResponse {
     private final String error;
-    private final LocalDateTime timestamp;
+    private final long timestamp;
 
     public ErrorResponse(String error) {
         this.error = error;
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = System.currentTimeMillis();
     }
 
     public String getError() {
         return error;
     }
 
-    public LocalDateTime getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 }
