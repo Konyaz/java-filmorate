@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -76,6 +77,21 @@ public class FilmService {
                 .sorted(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()))
                 .limit(count)
                 .collect(Collectors.toList());
+    }
+
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        log.info("Получение общих фильмов пользователей {} и {}", userId, friendId);
+        List<Long> userLikes = likeDao.getUserLikedFilmsId(userId);
+        List<Long> friendLikes = likeDao.getUserLikedFilmsId(friendId);
+
+        return userLikes.stream()
+                .filter(friendLikes::contains)
+                .map(filmDao::getById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                // используется та же сортировка по популярности что и в методе выше
+                .sorted(Comparator.comparingInt(film -> -likeDao.getLikes(film.getId()).size()))
+                .toList();
     }
 
     private void validate(Film film) {
