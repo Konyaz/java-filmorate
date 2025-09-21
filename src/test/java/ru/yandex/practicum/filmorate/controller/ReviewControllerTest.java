@@ -86,7 +86,7 @@ class ReviewControllerTest {
         // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertNotNull(response.getBody().getId());
+        assertNotNull(response.getBody().getReviewId());
         assertEquals(testReview.getContent(), response.getBody().getContent());
         assertEquals(0, response.getBody().getUseful()); // Рейтинг должен быть 0 при создании
     }
@@ -98,12 +98,12 @@ class ReviewControllerTest {
 
         // Act
         ResponseEntity<Review> response = restTemplate.getForEntity(
-                "/reviews/" + createdReview.getId(), Review.class);
+                "/reviews/" + createdReview.getReviewId(), Review.class);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(createdReview.getId(), response.getBody().getId());
+        assertEquals(createdReview.getReviewId(), response.getBody().getReviewId());
         assertEquals(createdReview.getContent(), response.getBody().getContent());
     }
 
@@ -134,11 +134,11 @@ class ReviewControllerTest {
         Review createdReview = restTemplate.postForObject("/reviews", testReview, Review.class);
 
         // Act
-        restTemplate.delete("/reviews/" + createdReview.getId());
+        restTemplate.delete("/reviews/" + createdReview.getReviewId());
 
         // Assert
         ResponseEntity<Review> response = restTemplate.getForEntity(
-                "/reviews/" + createdReview.getId(), Review.class);
+                "/reviews/" + createdReview.getReviewId(), Review.class);
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
@@ -155,7 +155,7 @@ class ReviewControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().length);
-        assertEquals(createdReview.getId(), response.getBody()[0].getId());
+        assertEquals(createdReview.getReviewId(), response.getBody()[0].getReviewId());
     }
 
     @Test
@@ -201,11 +201,11 @@ class ReviewControllerTest {
         Review createdReview = restTemplate.postForObject("/reviews", testReview, Review.class);
 
         // Act
-        restTemplate.put("/reviews/" + createdReview.getId() + "/like/" + testUser2.getId(), null);
+        restTemplate.put("/reviews/" + createdReview.getReviewId() + "/like/" + testUser2.getId(), null);
 
         // Assert
         ResponseEntity<Review> response = restTemplate.getForEntity(
-                "/reviews/" + createdReview.getId(), Review.class);
+                "/reviews/" + createdReview.getReviewId(), Review.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().getUseful()); // Рейтинг должен увеличиться на 1
     }
@@ -216,11 +216,11 @@ class ReviewControllerTest {
         Review createdReview = restTemplate.postForObject("/reviews", testReview, Review.class);
 
         // Act
-        restTemplate.put("/reviews/" + createdReview.getId() + "/dislike/" + testUser2.getId(), null);
+        restTemplate.put("/reviews/" + createdReview.getReviewId() + "/dislike/" + testUser2.getId(), null);
 
         // Assert
         ResponseEntity<Review> response = restTemplate.getForEntity(
-                "/reviews/" + createdReview.getId(), Review.class);
+                "/reviews/" + createdReview.getReviewId(), Review.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(-1, response.getBody().getUseful()); // Рейтинг должен уменьшиться на 1
     }
@@ -229,14 +229,14 @@ class ReviewControllerTest {
     void shouldRemoveLikeFromReview() {
         // Arrange
         Review createdReview = restTemplate.postForObject("/reviews", testReview, Review.class);
-        restTemplate.put("/reviews/" + createdReview.getId() + "/like/" + testUser2.getId(), null);
+        restTemplate.put("/reviews/" + createdReview.getReviewId() + "/like/" + testUser2.getId(), null);
 
         // Act
-        restTemplate.delete("/reviews/" + createdReview.getId() + "/like/" + testUser2.getId());
+        restTemplate.delete("/reviews/" + createdReview.getReviewId() + "/like/" + testUser2.getId());
 
         // Assert
         ResponseEntity<Review> response = restTemplate.getForEntity(
-                "/reviews/" + createdReview.getId(), Review.class);
+                "/reviews/" + createdReview.getReviewId(), Review.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(0, response.getBody().getUseful()); // Рейтинг должен вернуться к 0
     }
@@ -245,14 +245,14 @@ class ReviewControllerTest {
     void shouldRemoveDislikeFromReview() {
         // Arrange
         Review createdReview = restTemplate.postForObject("/reviews", testReview, Review.class);
-        restTemplate.put("/reviews/" + createdReview.getId() + "/dislike/" + testUser2.getId(), null);
+        restTemplate.put("/reviews/" + createdReview.getReviewId() + "/dislike/" + testUser2.getId(), null);
 
         // Act
-        restTemplate.delete("/reviews/" + createdReview.getId() + "/dislike/" + testUser2.getId());
+        restTemplate.delete("/reviews/" + createdReview.getReviewId() + "/dislike/" + testUser2.getId());
 
         // Assert
         ResponseEntity<Review> response = restTemplate.getForEntity(
-                "/reviews/" + createdReview.getId(), Review.class);
+                "/reviews/" + createdReview.getReviewId(), Review.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(0, response.getBody().getUseful()); // Рейтинг должен вернуться к 0
     }
@@ -275,7 +275,7 @@ class ReviewControllerTest {
         Review createdReview2 = restTemplate.postForObject("/reviews", review2, Review.class);
 
         // Добавляем лайки второму отзыву
-        restTemplate.put("/reviews/" + createdReview2.getId() + "/like/" + testUser2.getId(), null);
+        restTemplate.put("/reviews/" + createdReview2.getReviewId() + "/like/" + testUser2.getId(), null);
 
         // Act
         ResponseEntity<Review[]> response = restTemplate.getForEntity(
@@ -285,8 +285,8 @@ class ReviewControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().length);
-        assertEquals(createdReview2.getId(), response.getBody()[0].getId()); // Второй отзыв должен быть первым (у него выше рейтинг)
-        assertEquals(createdReview1.getId(), response.getBody()[1].getId()); // Первый отзыв должен быть вторым
+        assertEquals(createdReview2.getReviewId(), response.getBody()[0].getReviewId()); // Второй отзыв должен быть первым (у него выше рейтинг)
+        assertEquals(createdReview1.getReviewId(), response.getBody()[1].getReviewId()); // Первый отзыв должен быть вторым
     }
 
     @Test

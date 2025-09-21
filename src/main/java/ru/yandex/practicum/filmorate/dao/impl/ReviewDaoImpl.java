@@ -24,42 +24,50 @@ public class ReviewDaoImpl implements ReviewDao {
 
     @Override
     public Collection<Review> list(int count) {
-        String sql = "SELECT r.*, " +
-                " (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) - " +
-                " (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful " +
-                "FROM reviews r " +
-                "ORDER BY useful DESC " +
-                "LIMIT ?";
+        String sql = """
+            SELECT r.*,
+            (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) -
+             (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful
+            FROM reviews r
+            ORDER BY useful DESC
+            LIMIT ?
+        """;
         return jdbcTemplate.query(sql, mapper, count);
     }
 
     @Override
     public Collection<Review> filteredList(long filmId, int count) {
-        String sql = "SELECT r.*, " +
-                " (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) - " +
-                " (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful " +
-                "FROM reviews r " +
-                "WHERE film_id = ?" +
-                "ORDER BY useful DESC " +
-                "LIMIT ?";
+        String sql = """
+            SELECT r`.*,
+            (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) -
+             (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful
+            FROM reviews r
+            WHERE film_id = ?
+            ORDER BY useful DESC
+            LIMIT ?`
+        """;
         return jdbcTemplate.query(sql, mapper, filmId, count);
     }
 
     @Override
     public Review get(long id) {
-        String sql = "SELECT r.*, " +
-                " (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) - " +
-                " (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful " +
-                "FROM reviews r " +
-                "WHERE id = ? " +
-                "LIMIT 1";
+        String sql = """
+            SELECT r.*,
+            (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) -
+             (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful
+            FROM reviews r
+            WHERE id = ?
+            LIMIT 1
+        """;
         return jdbcTemplate.queryForObject(sql, mapper, id);
     }
 
     @Override
     public Review create(Review review) {
-        String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id) " +
-                "VALUES (?, ?, ?, ?)";
+        String sql = """
+            INSERT INTO reviews (content, is_positive, user_id, film_id)
+            VALUES (?, ?, ?, ?)
+        """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -73,24 +81,26 @@ public class ReviewDaoImpl implements ReviewDao {
         }, keyHolder);
 
         Long id = Objects.requireNonNull(keyHolder.getKey()).longValue();
-        review.setId(id);
+        review.setReviewId(id);
         review.setUseful(0);
         return review;
     }
 
     @Override
     public Review update(Review review) {
-        String query = "UPDATE reviews SET " +
-                "content = ?, is_positive = ?, user_id = ?, film_id = ? " +
-                "WHERE id = ?";
+        String sql = """
+            UPDATE reviews SET
+            content = ?, is_positive = ?, user_id = ?, film_id = ?
+            WHERE id = ?
+        """;
 
         jdbcTemplate.update(
-                query,
+                sql,
                 review.getContent(),
                 review.getIsPositive(),
                 review.getUserId(),
                 review.getFilmId(),
-                review.getId()
+                review.getReviewId()
         );
 
         return review;
@@ -98,65 +108,59 @@ public class ReviewDaoImpl implements ReviewDao {
 
     @Override
     public void delete(long id) {
-        String query = "DELETE FROM reviews WHERE id = ?";
+        String sql = "DELETE FROM reviews WHERE id = ?";
         jdbcTemplate.update(
-                query,
+                sql,
                 id
         );
     }
 
     @Override
     public boolean exists(long id) {
-        String query = "SELECT COUNT(*) FROM reviews WHERE id = ?";
-        Integer count = jdbcTemplate.queryForObject(query, Integer.class, id);
+        String sql = "SELECT COUNT(*) FROM reviews WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
         return count != 0;
     }
 
     public boolean likeExists(long id, long userId) {
-        String query = "SELECT COUNT(*) FROM review_likes WHERE review_id = ? AND user_id = ?";
-        Integer count = jdbcTemplate.queryForObject(query, Integer.class, id, userId);
+        String sql = "SELECT COUNT(*) FROM review_likes WHERE review_id = ? AND user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id, userId);
         return count != 0;
     }
 
     public boolean dislikeExists(long id, long userId) {
-        String query = "SELECT COUNT(*) FROM review_dislikes WHERE review_id = ? AND user_id = ?";
-        Integer count = jdbcTemplate.queryForObject(query, Integer.class, id, userId);
+        String sql = "SELECT COUNT(*) FROM review_dislikes WHERE review_id = ? AND user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id, userId);
         return count != 0;
     }
 
     @Override
     @Transactional
     public void addLike(long id, long userId) {
-        String query = "INSERT INTO review_likes (review_id, user_id) " +
-                "VALUES (?, ?)";
+        String sql = "INSERT INTO review_likes (review_id, user_id) VALUES (?, ?)";
 
-        jdbcTemplate.update(query, id, userId);
+        jdbcTemplate.update(sql, id, userId);
     }
 
     @Override
     @Transactional
     public void addDislike(long id, long userId) {
-        String query = "INSERT INTO review_dislikes (review_id, user_id) " +
-                "VALUES (?, ?)";
+        String sql = "INSERT INTO review_dislikes (review_id, user_id) VALUES (?, ?)";
 
-        jdbcTemplate.update(query, id, userId);
+        jdbcTemplate.update(sql, id, userId);
     }
 
     @Override
     @Transactional
     public void removeLike(long id, long userId) {
-        String query = "DELETE FROM review_likes " +
-                "WHERE review_id=? AND user_id=?";
-
-        jdbcTemplate.update(query, id, userId);
+        String sql = "DELETE FROM review_likes WHERE review_id = ? AND user_id = ? ";
+        jdbcTemplate.update(sql, id, userId);
     }
 
     @Override
     @Transactional
     public void removeDislike(long id, long userId) {
-        String query = "DELETE FROM review_dislikes " +
-                "WHERE review_id=? AND user_id=?";
-
-        jdbcTemplate.update(query, id, userId);
+        String sql = "DELETE FROM review_dislikes WHERE review_id = ? AND user_id = ?";
+        jdbcTemplate.update(sql, id, userId);
     }
 }
