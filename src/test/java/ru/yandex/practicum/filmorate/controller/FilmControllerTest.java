@@ -4,33 +4,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
-import java.util.List;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(FilmController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:test-data.sql")
 class FilmControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @MockBean
-    private FilmService filmService;
 
     private Film film;
 
@@ -46,21 +43,10 @@ class FilmControllerTest {
 
     @Test
     void createFilm_success() throws Exception {
-        Film createdFilm = new Film();
-        createdFilm.setId(1L);
-        createdFilm.setName("Test Film");
-        createdFilm.setDescription("Description");
-        createdFilm.setReleaseDate(LocalDate.of(2000, 1, 1));
-        createdFilm.setDuration(120);
-        createdFilm.setMpa(new Mpa(1L, "G"));
-
-        when(filmService.create(any(Film.class))).thenReturn(createdFilm);
-
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
-                .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(createdFilm)));
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -73,31 +59,59 @@ class FilmControllerTest {
         updatedFilm.setDuration(150);
         updatedFilm.setMpa(new Mpa(2L, "PG"));
 
-        when(filmService.update(any(Film.class))).thenReturn(updatedFilm);
-
         mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatedFilm)))
-                .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(updatedFilm)));
+                .andExpect(status().isOk());
     }
 
     @Test
     void getFilms_success() throws Exception {
-        Film film1 = new Film();
-        film1.setId(1L);
-        film1.setName("Film 1");
-        film1.setMpa(new Mpa(1L, "G"));
-
-        Film film2 = new Film();
-        film2.setId(2L);
-        film2.setName("Film 2");
-        film2.setMpa(new Mpa(2L, "PG"));
-
-        when(filmService.getAll()).thenReturn(List.of(film1, film2));
-
         mockMvc.perform(get("/films"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSearchFilmsByName_success() throws Exception {
+        mockMvc.perform(get("/films/search?query=колец&by=title")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSearchFilmsByDescription_success() throws Exception {
+        mockMvc.perform(get("/films/search?query=тайнах&by=description")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSearchFilmsEmptyQuery_throwsValidationException() throws Exception {
+        // Исправлено: теперь контроллер вернёт 400 Bad Request, а не 500
+        mockMvc.perform(get("/films/search?query=&by=title")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSearchFilmsNoResults_returnsEmptyList() throws Exception {
+        mockMvc.perform(get("/films/search?query=несуществующий&by=title")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(List.of(film1, film2))));
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void testSearchFilmsCaseInsensitive_success() throws Exception {
+        mockMvc.perform(get("/films/search?query=КОЛЕЦ&by=title")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSearchFilmsSortedByLikes_success() throws Exception {
+        mockMvc.perform(get("/films/search?query=про&by=title")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 }

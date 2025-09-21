@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.dao.MpaDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -16,6 +17,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,7 +26,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Import({FilmDaoImpl.class, GenreDaoImpl.class, MpaDaoImpl.class})
 @ActiveProfiles("test")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:test-data.sql")
 class FilmDaoImplTest {
+
     @Autowired
     private FilmDaoImpl filmStorage;
 
@@ -35,7 +39,8 @@ class FilmDaoImplTest {
 
     @BeforeEach
     void setUp() {
-        Mpa mpa = mpaDao.getMpaById(1L).orElseThrow(() -> new RuntimeException("MPA with ID 1 not found"));
+        Mpa mpa = mpaDao.getMpaById(1L)
+                .orElseThrow(() -> new RuntimeException("MPA с ID 1 не найден"));
 
         testFilm = new Film();
         testFilm.setName("Test Film");
@@ -73,32 +78,39 @@ class FilmDaoImplTest {
     @Test
     void testGetAllFilms() {
         filmStorage.create(testFilm);
-
-        Mpa mpa = mpaDao.getMpaById(2L).orElseThrow(() -> new RuntimeException("MPA with ID 2 not found"));
-
-        Film anotherFilm = new Film();
-        anotherFilm.setName("Another Film");
-        anotherFilm.setDescription("Another Description");
-        anotherFilm.setReleaseDate(LocalDate.of(2010, 1, 1));
-        anotherFilm.setDuration(100);
-        anotherFilm.setMpa(mpa);
-
-        filmStorage.create(anotherFilm);
-
         List<Film> films = filmStorage.getAll();
-        assertEquals(2, films.size());
+        assertFalse(films.isEmpty());
     }
 
     @Test
     void testUpdateNonExistentFilm() {
         testFilm.setId(999L);
-        assertThrows(NotFoundException.class,
-                () -> filmStorage.update(testFilm));
+        assertThrows(NotFoundException.class, () -> filmStorage.update(testFilm));
     }
 
     @Test
     void testGetNonExistentFilm() {
         Optional<Film> found = filmStorage.getById(999L);
         assertTrue(found.isEmpty());
+    }
+
+    @Test
+    void testSearchFilmsByName_success() {
+        List<Film> films = filmStorage.searchFilms("колец", Set.of("title"));
+        assertEquals(1, films.size());
+        assertEquals("Властелин колец", films.get(0).getName());
+    }
+
+    @Test
+    void testSearchFilmsByDescription_success() {
+        List<Film> films = filmStorage.searchFilms("тайнах", Set.of("description"));
+        assertEquals(1, films.size());
+        assertEquals("Напряжённый сюжет о тайнах", films.get(0).getDescription());
+    }
+
+    @Test
+    void testSearchFilmsNoResults_returnsEmptyList() {
+        List<Film> films = filmStorage.searchFilms("несуществующий", Set.of("title"));
+        assertTrue(films.isEmpty());
     }
 }

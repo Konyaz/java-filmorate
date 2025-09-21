@@ -1,109 +1,106 @@
 package ru.yandex.practicum.filmorate.service;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
 
-import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FilmService {
+
     private final FilmDao filmDao;
-    private final UserDao userDao;
-    private final LikeDao likeDao;
     private final MpaDao mpaDao;
     private final GenreDao genreDao;
+    private final LikeDao likeDao;
+    private final UserDao userDao;
 
-    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
-
-    public Film create(@Valid Film film) {
-        validate(film);
-        validateFilmData(film);
-        log.info("Создание фильма: {}", film);
+    // Создание нового фильма
+    public Film create(Film film) {
+        validateFilmMpa(film);
+        validateFilmGenres(film);
         return filmDao.create(film);
     }
 
-    public Film update(@Valid Film film) {
-        validate(film);
-        validateFilmData(film);
-        log.info("Обновление фильма: {}", film);
+    // Обновление существующего фильма
+    public Film update(Film film) {
+        if (film.getId() == null) {
+            throw new ValidationException("ID фильма обязателен для обновления");
+        }
+        if (!filmDao.existsById(film.getId())) {
+            throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
+        }
+
+        validateFilmMpa(film);
+        validateFilmGenres(film);
+
         return filmDao.update(film);
     }
 
+    // Получение всех фильмов
     public List<Film> getAll() {
-        log.info("Получение всех фильмов");
         return filmDao.getAll();
     }
 
+    // Получение фильма по ID
     public Film getById(Long id) {
-        log.info("Получение фильма с ID: {}", id);
         return filmDao.getById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
     }
 
+    // Добавление лайка пользователем фильму
     public void addLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
+        getById(filmId); // Проверка существования фильма
         userDao.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-
+                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.addLike(filmId, userId);
-        log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
     }
 
+    // Удаление лайка пользователем у фильма
     public void removeLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
+        getById(filmId); // Проверка существования фильма
         userDao.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-
+                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.removeLike(filmId, userId);
-        log.info("Пользователь {} убрал лайк с фильма {}", userId, filmId);
     }
 
+    // Получение популярных фильмов
     public List<Film> getPopularFilms(int count) {
-        log.info("Получение {} популярных фильмов", count);
-        return filmDao.getAll().stream()
-                .sorted(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()))
-                .limit(count)
-                .collect(Collectors.toList());
+        if (count <= 0) {
+            throw new ValidationException("Количество популярных фильмов должно быть больше 0");
+        }
+        return filmDao.getPopular(count);
     }
 
-    private void validate(Film film) {
-        if (film.getReleaseDate() == null) {
-            throw new ValidationException("Дата релиза обязательна");
+    // Поиск фильмов по названию, описанию или режиссеру
+    public List<Film> searchFilms(String query, Set<String> by) {
+        if (query == null || query.isBlank()) {
+            throw new ValidationException("Поисковый запрос не может быть пустым");
         }
-        if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
-            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        if (by == null || by.isEmpty()) {
+            throw new ValidationException("Укажите хотя бы одно поле для поиска");
         }
-        if (film.getMpa() == null) {
-            throw new ValidationException("Рейтинг MPA обязателен");
-        }
-        if (film.getMpa().getId() == null) {
-            throw new ValidationException("ID рейтинга MPA обязателен");
-        }
+        return filmDao.searchFilms(query, by);
     }
 
-    private void validateFilmData(Film film) {
-        Long mpaId = film.getMpa().getId();
-        mpaDao.getMpaById(mpaId)
-                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + mpaId + " не найден"));
 
+    private void validateFilmMpa(Film film) {
+        if (film.getMpa() == null || film.getMpa().getId() == null) {
+            throw new ValidationException("MPA рейтинг обязателен");
+        }
+        mpaDao.getMpaById(film.getMpa().getId())
+                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + film.getMpa().getId() + " не найден"));
+    }
+
+    private void validateFilmGenres(Film film) {
         if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
-                Long genreId = genre.getId();
-                genreDao.getGenreById(genreId)
-                        .orElseThrow(() -> new NotFoundException("Жанр с ID " + genreId + " не найден"));
-            }
+            film.getGenres().forEach(genre -> genreDao.getGenreById(genre.getId())
+                    .orElseThrow(() -> new NotFoundException("Жанр с ID " + genre.getId() + " не найден")));
         }
     }
 }
