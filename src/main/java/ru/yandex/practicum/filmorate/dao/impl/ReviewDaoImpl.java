@@ -26,8 +26,7 @@ public class ReviewDaoImpl implements ReviewDao {
     public Collection<Review> list(int count) {
         String sql = """
             SELECT r.*,
-            (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) -
-             (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful
+            (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) - (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful
             FROM reviews r
             ORDER BY useful DESC
             LIMIT ?
@@ -38,13 +37,13 @@ public class ReviewDaoImpl implements ReviewDao {
     @Override
     public Collection<Review> filteredList(long filmId, int count) {
         String sql = """
-            SELECT r`.*,
+            SELECT r.*,
             (SELECT COUNT(*) FROM review_likes WHERE review_id = r.id) -
              (SELECT COUNT(*) FROM review_dislikes WHERE review_id = r.id) AS useful
             FROM reviews r
             WHERE film_id = ?
             ORDER BY useful DESC
-            LIMIT ?`
+            LIMIT ?
         """;
         return jdbcTemplate.query(sql, mapper, filmId, count);
     }
@@ -102,8 +101,7 @@ public class ReviewDaoImpl implements ReviewDao {
                 review.getFilmId(),
                 review.getReviewId()
         );
-
-        return review;
+        return get(review.getReviewId());
     }
 
     @Override
