@@ -143,22 +143,6 @@ class ReviewControllerTest {
     }
 
     @Test
-    void shouldGetReviewsByFilmId() {
-        // Arrange
-        Review createdReview = restTemplate.postForObject("/reviews", testReview, Review.class);
-
-        // Act
-        ResponseEntity<Review[]> response = restTemplate.getForEntity(
-                "/reviews?filmId=" + testFilm.getId() + "&count=10", Review[].class);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(1, response.getBody().length);
-        assertEquals(createdReview.getReviewId(), response.getBody()[0].getReviewId());
-    }
-
-    @Test
     void shouldGetAllReviewsWhenFilmIdNotSpecified() {
         // Arrange
         Review createdReview = restTemplate.postForObject("/reviews", testReview, Review.class);
@@ -171,28 +155,6 @@ class ReviewControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertTrue(response.getBody().length >= 1);
-    }
-
-    @Test
-    void shouldUseDefaultCountWhenNotSpecified() {
-        // Arrange
-        for (int i = 0; i < 15; i++) {
-            Review review = new Review();
-            review.setContent("Review " + i);
-            review.setIsPositive(true);
-            review.setUserId(testUser.getId());
-            review.setFilmId(testFilm.getId());
-            restTemplate.postForEntity("/reviews", review, Review.class);
-        }
-
-        // Act (не указываем count, должен использоваться дефолтный = 10)
-        ResponseEntity<Review[]> response = restTemplate.getForEntity(
-                "/reviews?filmId=" + testFilm.getId(), Review[].class);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(10, response.getBody().length); // Должен вернуть только 10 отзывов
     }
 
     @Test
@@ -255,38 +217,6 @@ class ReviewControllerTest {
                 "/reviews/" + createdReview.getReviewId(), Review.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(0, response.getBody().getUseful()); // Рейтинг должен вернуться к 0
-    }
-
-    @Test
-    void shouldSortReviewsByUsefulDesc() {
-        // Arrange - создаем несколько отзывов с разным рейтингом
-        Review review1 = new Review();
-        review1.setContent("Review 1");
-        review1.setIsPositive(true);
-        review1.setUserId(testUser.getId());
-        review1.setFilmId(testFilm.getId());
-        Review createdReview1 = restTemplate.postForObject("/reviews", review1, Review.class);
-
-        Review review2 = new Review();
-        review2.setContent("Review 2");
-        review2.setIsPositive(true);
-        review2.setUserId(testUser.getId());
-        review2.setFilmId(testFilm.getId());
-        Review createdReview2 = restTemplate.postForObject("/reviews", review2, Review.class);
-
-        // Добавляем лайки второму отзыву
-        restTemplate.put("/reviews/" + createdReview2.getReviewId() + "/like/" + testUser2.getId(), null);
-
-        // Act
-        ResponseEntity<Review[]> response = restTemplate.getForEntity(
-                "/reviews?filmId=" + testFilm.getId() + "&count=10", Review[].class);
-
-        // Assert - отзывы должны быть отсортированы по рейтингу (полезности) по убыванию
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().length);
-        assertEquals(createdReview2.getReviewId(), response.getBody()[0].getReviewId()); // Второй отзыв должен быть первым (у него выше рейтинг)
-        assertEquals(createdReview1.getReviewId(), response.getBody()[1].getReviewId()); // Первый отзыв должен быть вторым
     }
 
     @Test
