@@ -8,4 +8,6 @@ public interface LikeDao {
     void removeLike(Long filmId, Long userId);
 
     List<Long> getLikes(Long filmId);
+
+    List<Long> getUserLikedFilmsId(Long userId);
 }
