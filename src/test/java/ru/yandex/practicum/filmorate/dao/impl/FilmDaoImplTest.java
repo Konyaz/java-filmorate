@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import ru.yandex.practicum.filmorate.dao.FilmDao;
 import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.dao.MpaDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -24,13 +25,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @JdbcTest
 @AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@Import({FilmDaoImpl.class, GenreDaoImpl.class, MpaDaoImpl.class})
+@Import({FilmDaoImpl.class, GenreDaoImpl.class, MpaDaoImpl.class, FilmDirectorDaoImpl.class, DirectorDaoImpl.class})
 @ActiveProfiles("test")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:test-data.sql")
 class FilmDaoImplTest {
 
     @Autowired
-    private FilmDaoImpl filmStorage;
+    private FilmDao filmStorage;
 
     @Autowired
     private MpaDao mpaDao;

@@ -1,14 +1,3 @@
--- Тестовые данные для тестирования приложения Filmorate
-DROP TABLE IF EXISTS film_directors;
-DROP TABLE IF EXISTS directors;
-DROP TABLE IF EXISTS film_genres;
-DROP TABLE IF EXISTS likes;
-DROP TABLE IF EXISTS friends;
-DROP TABLE IF EXISTS films;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS genres;
-DROP TABLE IF EXISTS mpa;
-
 CREATE TABLE IF NOT EXISTS mpa (
     id BIGINT PRIMARY KEY,
     name VARCHAR(10) NOT NULL
@@ -70,7 +59,7 @@ CREATE TABLE IF NOT EXISTS directors (
     name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE film_directors (
+CREATE TABLE IF NOT EXISTS film_directors (
     film_id BIGINT NOT NULL REFERENCES films(id) ON DELETE CASCADE,
     director_id BIGINT NOT NULL REFERENCES directors(id) ON DELETE CASCADE,
     PRIMARY KEY (film_id, director_id)

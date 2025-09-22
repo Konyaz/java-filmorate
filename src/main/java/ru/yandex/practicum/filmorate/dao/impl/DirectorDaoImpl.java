@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
-@Repository("directorDbStorage")
+@Repository
 @RequiredArgsConstructor
 public class DirectorDaoImpl implements DirectorDao {
     private final JdbcTemplate jdbcTemplate;
