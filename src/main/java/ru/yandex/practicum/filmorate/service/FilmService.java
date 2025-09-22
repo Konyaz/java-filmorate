@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.List;
@@ -17,8 +18,10 @@ public class FilmService {
     private final FilmDao filmDao;
     private final MpaDao mpaDao;
     private final GenreDao genreDao;
-    private final LikeDao likeDao;
-    private final UserDao userDao;
+    private final FilmDirectorDao filmDirectorDao;
+    private final DirectorDao directorDao;
+
+    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     // Создание нового фильма
     public Film create(Film film) {
@@ -70,17 +73,47 @@ public class FilmService {
     }
 
     // Получение популярных фильмов
-    public List<Film> getPopularFilms(int count) {
+    ublic List<Film> getPopularFilms(int count) {
         if (count <= 0) {
             throw new ValidationException("Количество популярных фильмов должно быть больше 0");
         }
         return filmDao.getPopular(count);
     }
 
+    public List<Film> getFilmsByDirector(Long directorId, String sortBy) {
+        // Проверка существования режиссера
+        directorDao.getById(directorId)
+                .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
+
+        List<Long> filmIds = filmDirectorDao.getFilmIdsByDirectorId(directorId);
+        List<Film> films = filmIds.stream()
+                .map(this::getById)
+                .collect(Collectors.toList());
+
+        // Сортировка
+        if ("year".equals(sortBy)) {
+            films.sort(Comparator.comparing(Film::getReleaseDate));
+        } else if ("likes".equals(sortBy)) {
+            films.sort(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()));
+        }
+
+        return films;
+    }
+
     // Поиск фильмов по названию, описанию или режиссеру
     public List<Film> searchFilms(String query, Set<String> by) {
         if (query == null || query.isBlank()) {
             throw new ValidationException("Поисковый запрос не может быть пустым");
+        }
+        if (by == null || by.isEmpty()) {
+            throw new ValidationException("Укажите хотя бы одно поле для поиска");
+        }
+        return filmDao.searchFilms(query, by);
+    }
+
+    private void validate(Film film) {
+        if (film.getReleaseDate() == null) {
+            throw new ValidationException("Дата релиза обязательна");
         }
         if (by == null || by.isEmpty()) {
             throw new ValidationException("Укажите хотя бы одно поле для поиска");
@@ -99,8 +132,19 @@ public class FilmService {
 
     private void validateFilmGenres(Film film) {
         if (film.getGenres() != null) {
-            film.getGenres().forEach(genre -> genreDao.getGenreById(genre.getId())
-                    .orElseThrow(() -> new NotFoundException("Жанр с ID " + genre.getId() + " не найден")));
+            for (Genre genre : film.getGenres()) {
+                Long genreId = genre.getId();
+                genreDao.getGenreById(genreId)
+                        .orElseThrow(() -> new NotFoundException("Жанр с ID " + genreId + " не найден"));
+            }
+        }
+
+        if (film.getDirectors() != null) {
+            for (Director director : film.getDirectors()) {
+                Long directorId = director.getId();
+                directorDao.getById(directorId)
+                        .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
+            }
         }
     }
 }
