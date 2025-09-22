@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 
@@ -24,6 +25,8 @@ public class FilmService {
     private final LikeDao likeDao;
     private final MpaDao mpaDao;
     private final GenreDao genreDao;
+    private final FilmDirectorDao filmDirectorDao;
+    private final DirectorDao directorDao;
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
@@ -78,6 +81,26 @@ public class FilmService {
                 .collect(Collectors.toList());
     }
 
+    public List<Film> getFilmsByDirector(Long directorId, String sortBy) {
+        // Проверка существования режиссера
+        directorDao.getById(directorId)
+                .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
+
+        List<Long> filmIds = filmDirectorDao.getFilmIdsByDirectorId(directorId);
+        List<Film> films = filmIds.stream()
+                .map(this::getById)
+                .collect(Collectors.toList());
+
+        // Сортировка
+        if ("year".equals(sortBy)) {
+            films.sort(Comparator.comparing(Film::getReleaseDate));
+        } else if ("likes".equals(sortBy)) {
+            films.sort(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()));
+        }
+
+        return films;
+    }
+
     private void validate(Film film) {
         if (film.getReleaseDate() == null) {
             throw new ValidationException("Дата релиза обязательна");
@@ -103,6 +126,14 @@ public class FilmService {
                 Long genreId = genre.getId();
                 genreDao.getGenreById(genreId)
                         .orElseThrow(() -> new NotFoundException("Жанр с ID " + genreId + " не найден"));
+            }
+        }
+
+        if (film.getDirectors() != null) {
+            for (Director director : film.getDirectors()) {
+                Long directorId = director.getId();
+                directorDao.getById(directorId)
+                        .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
             }
         }
     }
