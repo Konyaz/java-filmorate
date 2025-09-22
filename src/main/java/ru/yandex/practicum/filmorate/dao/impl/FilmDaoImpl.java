@@ -149,4 +149,21 @@ public class FilmDaoImpl implements FilmDao {
             return genre;
         }, filmId);
     }
+
+    @Override
+    public List<Film> getFilmsLikedByUserButNotAnother(Long similarUserId, Long targetUserId) {
+        final String sql = """
+                SELECT f.id, f.name, f.description, f.release_date, f.duration,
+                       f.mpa_id, m.name AS mpa_name
+                FROM films f
+                JOIN likes l ON f.id = l.film_id
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                WHERE l.user_id = ?
+                  AND f.id NOT IN (SELECT film_id FROM likes WHERE user_id = ?)
+                """;
+
+        return jdbcTemplate.query(sql, (rs, rn) -> mapRowToFilm(rs, true),
+                similarUserId, targetUserId);
+    }
+
 }

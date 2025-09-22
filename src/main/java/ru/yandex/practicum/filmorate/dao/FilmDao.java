@@ -13,4 +13,6 @@ public interface FilmDao {
     List<Film> getAll();
 
     Optional<Film> getById(Long id);
+
+    List<Film> getFilmsLikedByUserButNotAnother(Long similarUserId, Long targetUserId);
 }
