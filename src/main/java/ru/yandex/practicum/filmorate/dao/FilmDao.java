@@ -16,6 +16,8 @@ public interface FilmDao {
 
     Optional<Film> getById(Long id);
 
+    List<Film> getFilmsLikedByUserButNotAnother(Long similarUserId, Long targetUserId);
+
     List<Film> searchFilms(String query, Set<String> by);
 
     List<Film> getPopular(int count, Integer genreId, Integer year);
