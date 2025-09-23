@@ -1,18 +1,23 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
+import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FilmService {
@@ -75,7 +80,7 @@ public class FilmService {
     }
 
     // Получение популярных фильмов
-    ublic List<Film> getPopularFilms(int count) {
+    public List<Film> getPopularFilms(int count) {
         if (count <= 0) {
             throw new ValidationException("Количество популярных фильмов должно быть больше 0");
         }
@@ -111,26 +116,6 @@ public class FilmService {
             throw new ValidationException("Укажите хотя бы одно поле для поиска");
         }
         return filmDao.searchFilms(query, by);
-    }
-
-    public List<Film> getFilmsByDirector(Long directorId, String sortBy) {
-        // Проверка существования режиссера
-        directorDao.getById(directorId)
-                .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
-
-        List<Long> filmIds = filmDirectorDao.getFilmIdsByDirectorId(directorId);
-        List<Film> films = filmIds.stream()
-                .map(this::getById)
-                .collect(Collectors.toList());
-
-        // Сортировка
-        if ("year".equals(sortBy)) {
-            films.sort(Comparator.comparing(Film::getReleaseDate));
-        } else if ("likes".equals(sortBy)) {
-            films.sort(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()));
-        }
-
-        return films;
     }
 
     public List<Film> getCommonFilms(Long userId, Long friendId) {
