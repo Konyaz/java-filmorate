@@ -148,17 +148,6 @@ public class FilmService {
                 .toList();
     }
 
-    private void validate(Film film) {
-        if (film.getReleaseDate() == null) {
-            throw new ValidationException("Дата релиза обязательна");
-        }
-        if (by == null || by.isEmpty()) {
-            throw new ValidationException("Укажите хотя бы одно поле для поиска");
-        }
-        return filmDao.searchFilms(query, by);
-    }
-
-
     private void validateFilmMpa(Film film) {
         if (film.getMpa() == null || film.getMpa().getId() == null) {
             throw new ValidationException("MPA рейтинг обязателен");
