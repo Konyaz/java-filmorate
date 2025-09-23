@@ -4,13 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.dao.LikeDao;
-import ru.yandex.practicum.filmorate.dao.UserDao;
-import ru.yandex.practicum.filmorate.dao.FilmDao;
-import ru.yandex.practicum.filmorate.dao.MpaDao;
-import ru.yandex.practicum.filmorate.dao.GenreDao;
-import ru.yandex.practicum.filmorate.dao.FilmDirectorDao;
-import ru.yandex.practicum.filmorate.dao.DirectorDao;
+import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
@@ -53,7 +47,6 @@ public class FilmService {
         validateFilmData(film);
         log.info("Обновление фильма: {}", film);
         return filmDao.update(film);
-
     }
 
     // Получение всех фильмов
@@ -119,7 +112,10 @@ public class FilmService {
         if (by == null || by.isEmpty()) {
             throw new ValidationException("Укажите хотя бы одно поле для поиска");
         }
-        return filmDao.searchFilms(query, by);
+        log.info("Поиск фильмов по запросу: '{}' в полях: {}", query, by);
+        List<Film> films = filmDao.searchFilms(query, by);
+        log.info("Найдено фильмов: {}", films.size());
+        return films;
     }
 
     public List<Film> getCommonFilms(Long userId, Long friendId) {
@@ -135,7 +131,6 @@ public class FilmService {
                 .sorted(Comparator.comparingInt(film -> -likeDao.getLikes(film.getId()).size()))
                 .toList();
     }
-
 
     private void validate(Film film) {
         if (film.getReleaseDate() == null) {
@@ -166,7 +161,6 @@ public class FilmService {
                 genreDao.getGenreById(genreId)
                         .orElseThrow(() -> new NotFoundException("Жанр с ID " + genreId + " не найден"));
             }
-
         }
 
         if (film.getDirectors() != null) {

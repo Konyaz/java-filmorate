@@ -76,7 +76,7 @@ public class FilmController {
         }
 
         // Валидация параметра by
-        Set<String> validFields = Set.of("title", "director", "description");
+        Set<String> validFields = Set.of("title", "director");
         Set<String> searchFields = Arrays.stream(by.split(","))
                 .map(String::trim)
                 .map(String::toLowerCase)
@@ -84,7 +84,7 @@ public class FilmController {
                 .collect(Collectors.toSet());
 
         if (searchFields.isEmpty()) {
-            throw new ValidationException("Параметр 'by' должен содержать одно из значений: title, director, description");
+            throw new ValidationException("Параметр 'by' должен содержать одно из значений: title, director");
         }
 
         return filmService.searchFilms(query, searchFields);

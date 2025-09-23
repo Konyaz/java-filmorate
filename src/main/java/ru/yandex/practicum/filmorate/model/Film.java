@@ -53,5 +53,6 @@ public class Film {
         if (mpa == null) {
             mpa = new Mpa();
         }
+        mpa.setId(mpaId);
     }
 }

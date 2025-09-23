@@ -101,7 +101,10 @@ public class FilmDaoImpl implements FilmDao {
     public List<Film> getAll() {
         String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
                 "FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id ORDER BY f.id";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs));
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs));
+        // Заполняем directors для каждого фильма
+        films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
+        return films;
     }
 
     @Override
@@ -111,7 +114,9 @@ public class FilmDaoImpl implements FilmDao {
         List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), id);
 
         if (films.isEmpty()) return Optional.empty();
-        return Optional.of(films.get(0));
+        Film film = films.get(0);
+        film.setDirectors(getDirectorsForFilm(film.getId()));
+        return Optional.of(film);
     }
 
     @Override
@@ -155,7 +160,10 @@ public class FilmDaoImpl implements FilmDao {
         String sql = sqlBase + where;
 
         try {
-            return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+            List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+            // Заполняем directors для найденных фильмов
+            films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
+            return films;
         } catch (Exception e) {
             // Если есть проблемы с таблицей директоров, возвращаем поиск только по названию и описанию
             if (e.getMessage().contains("directors") || e.getMessage().contains("film_directors")) {
@@ -179,7 +187,9 @@ public class FilmDaoImpl implements FilmDao {
                 where.append(" ORDER BY f.id");
                 sql = sqlBase + where;
 
-                return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+                List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+                films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
+                return films;
             }
             throw e;
         }
@@ -193,7 +203,10 @@ public class FilmDaoImpl implements FilmDao {
                 "GROUP BY f.id, m.name " +
                 "ORDER BY COUNT(l.user_id) DESC " +
                 "LIMIT ?";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), count);
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), count);
+        // Заполняем directors для популярных фильмов
+        films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
+        return films;
     }
 
     @Override
@@ -231,8 +244,7 @@ public class FilmDaoImpl implements FilmDao {
 
         List<Genre> genres = getGenresForFilm(film.getId());
         film.setGenres(genres);
-        List<Director> directors = getDirectorsForFilm(film.getId());
-        film.setDirectors(directors);
+        // Directors будут заполнены позже в отдельных вызовах
 
         return film;
     }
