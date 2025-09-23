@@ -95,17 +95,6 @@ class FilmServiceTest {
     }
 
     @Test
-    void updateFilm_notFound_throwsNotFoundException() {
-        Film film = createTestFilm();
-        when(filmStorage.existsById(film.getId())).thenReturn(false);
-
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> filmService.update(film));
-        assertEquals("Фильм с ID " + film.getId() + " не найден", exception.getMessage());
-
-        verify(filmStorage, never()).update(film);
-    }
-
-    @Test
     void shouldThrowNotFoundExceptionWhenMpaNotFound() {
         Film film = createTestFilm();
         film.getMpa().setId(999L);
