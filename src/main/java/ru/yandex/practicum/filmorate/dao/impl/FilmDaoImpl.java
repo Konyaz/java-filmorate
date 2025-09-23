@@ -7,8 +7,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.dao.DirectorDao;
 import ru.yandex.practicum.filmorate.dao.FilmDao;
+import ru.yandex.practicum.filmorate.dao.FilmDirectorDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -25,6 +28,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FilmDaoImpl implements FilmDao {
     private final JdbcTemplate jdbcTemplate;
+    private final FilmDirectorDao filmDirectorDao;
+    private final DirectorDao directorDao;
 
     @Override
     public Film create(Film film) {
@@ -45,6 +50,7 @@ public class FilmDaoImpl implements FilmDao {
         film.setId(id);
 
         saveFilmGenres(film);
+        saveFilmDirectors(film);
         log.info("Film created id={}", id);
         return film;
     }
@@ -68,6 +74,8 @@ public class FilmDaoImpl implements FilmDao {
 
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         saveFilmGenres(film);
+        filmDirectorDao.removeDirectorsFromFilm(film.getId());
+        saveFilmDirectors(film);
         log.info("Film updated id={}", film.getId());
         return film;
     }
@@ -81,6 +89,14 @@ public class FilmDaoImpl implements FilmDao {
             final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
             for (Long genreId : uniqueGenreIds) {
                 jdbcTemplate.update(genreSql, film.getId(), genreId);
+            }
+        }
+    }
+
+    private void saveFilmDirectors(Film film) {
+        if (film.getDirectors() != null) {
+            for (Director director : film.getDirectors()) {
+                filmDirectorDao.addDirectorToFilm(film.getId(), director.getId());
             }
         }
     }
@@ -130,9 +146,19 @@ public class FilmDaoImpl implements FilmDao {
         if (loadGenres) {
             List<Genre> genres = getGenresForFilm(film.getId());
             film.setGenres(genres);
+            List<Director> directors = getDirectorsForFilm(film.getId());
+            film.setDirectors(directors);
         }
 
         return film;
+    }
+
+    private List<Director> getDirectorsForFilm(Long filmId) {
+        List<Long> directorIds = filmDirectorDao.getDirectorIdsByFilmId(filmId);
+        return directorIds.stream()
+                .map(id -> directorDao.getById(id).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private List<Genre> getGenresForFilm(Long filmId) {

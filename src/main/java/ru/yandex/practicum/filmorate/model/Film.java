@@ -31,6 +31,8 @@ public class Film {
 
     private List<Genre> genres = new ArrayList<>();
 
+    private List<Director> directors = new ArrayList<>();
+
     // Новый метод для удобства
     public void setMpaId(Long mpaId) {
         if (mpa == null) {
