@@ -39,25 +39,20 @@ public class FilmService {
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     // Создание нового фильма
-    public Film create(Film film) {
-        validateFilmMpa(film);
-        validateFilmGenres(film);
+    public Film create(@Valid Film film) {
+        validate(film);
+        validateFilmData(film);
+        log.info("Создание фильма: {}", film);
         return filmDao.create(film);
     }
 
     // Обновление существующего фильма
-    public Film update(Film film) {
-        if (film.getId() == null) {
-            throw new ValidationException("ID фильма обязателен для обновления");
-        }
-        if (!filmDao.existsById(film.getId())) {
-            throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
-        }
-
-        validateFilmMpa(film);
-        validateFilmGenres(film);
-
+    public Film update(@Valid Film film) {
+        validate(film);
+        validateFilmData(film);
+        log.info("Обновление фильма: {}", film);
         return filmDao.update(film);
+
     }
 
     // Получение всех фильмов
@@ -136,26 +131,41 @@ public class FilmService {
                 .map(filmDao::getById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                // используется та же сортировка по популярности что и в методе выше
                 .sorted(Comparator.comparingInt(film -> -likeDao.getLikes(film.getId()).size()))
                 .toList();
     }
 
-    private void validateFilmMpa(Film film) {
-        if (film.getMpa() == null || film.getMpa().getId() == null) {
-            throw new ValidationException("MPA рейтинг обязателен");
+
+    private void validate(Film film) {
+        if (film.getReleaseDate() == null) {
+            throw new ValidationException("Дата релиза обязательна");
         }
-        mpaDao.getMpaById(film.getMpa().getId())
-                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + film.getMpa().getId() + " не найден"));
+
+        if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
+            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        }
+
+        if (film.getMpa() == null) {
+            throw new ValidationException("Рейтинг MPA обязателен");
+        }
+
+        if (film.getMpa().getId() == null) {
+            throw new ValidationException("ID рейтинга MPA обязателен");
+        }
     }
 
-    private void validateFilmGenres(Film film) {
+    private void validateFilmData(Film film) {
+        Long mpaId = film.getMpa().getId();
+        mpaDao.getMpaById(mpaId)
+                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + mpaId + " не найден"));
+
         if (film.getGenres() != null) {
             for (Genre genre : film.getGenres()) {
                 Long genreId = genre.getId();
                 genreDao.getGenreById(genreId)
                         .orElseThrow(() -> new NotFoundException("Жанр с ID " + genreId + " не найден"));
             }
+
         }
 
         if (film.getDirectors() != null) {
