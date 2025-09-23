@@ -18,6 +18,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -48,7 +49,7 @@ public class FilmDaoImpl implements FilmDao {
 
         saveFilmGenres(film);
         saveFilmDirectors(film);
-        log.info("Film created id={}", id);
+        log.info("Film created id={}", film.getId());
         return film;
     }
 
@@ -228,12 +229,10 @@ public class FilmDaoImpl implements FilmDao {
         mpa.setName(rs.getString("mpa_name"));
         film.setMpa(mpa);
 
-        if (loadGenres) {
-            List<Genre> genres = getGenresForFilm(film.getId());
-            film.setGenres(genres);
-            List<Director> directors = getDirectorsForFilm(film.getId());
-            film.setDirectors(directors);
-        }
+        List<Genre> genres = getGenresForFilm(film.getId());
+        film.setGenres(genres);
+        List<Director> directors = getDirectorsForFilm(film.getId());
+        film.setDirectors(directors);
 
         return film;
     }
