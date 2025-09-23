@@ -175,4 +175,10 @@ public class FilmDaoImpl implements FilmDao {
             return genre;
         }, filmId);
     }
+
+    public Boolean exists(Long id) {
+        String sql = "SELECT COUNT(*) FROM films WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != 0;
+    }
 }

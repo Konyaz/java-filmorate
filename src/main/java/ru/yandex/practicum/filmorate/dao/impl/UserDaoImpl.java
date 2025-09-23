@@ -96,4 +96,10 @@ public class UserDaoImpl implements UserDao {
             return Optional.empty();
         }
     }
+
+    public Boolean exists(Long id) {
+        String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != 0;
+    }
 }
