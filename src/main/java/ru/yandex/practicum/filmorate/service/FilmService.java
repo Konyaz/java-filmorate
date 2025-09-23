@@ -33,7 +33,6 @@ public class FilmService {
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
-    // Создание нового фильма
     public Film create(@Valid Film film) {
         validate(film);
         validateFilmData(film);
@@ -41,7 +40,6 @@ public class FilmService {
         return filmDao.create(film);
     }
 
-    // Обновление существующего фильма
     public Film update(@Valid Film film) {
         validate(film);
         validateFilmData(film);
@@ -49,34 +47,29 @@ public class FilmService {
         return filmDao.update(film);
     }
 
-    // Получение всех фильмов
     public List<Film> getAll() {
         return filmDao.getAll();
     }
 
-    // Получение фильма по ID
     public Film getById(Long id) {
         return filmDao.getById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
     }
 
-    // Добавление лайка пользователем фильму
     public void addLike(Long filmId, Long userId) {
-        getById(filmId); // Проверка существования фильма
+        getById(filmId);
         userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.addLike(filmId, userId);
     }
 
-    // Удаление лайка пользователем у фильма
     public void removeLike(Long filmId, Long userId) {
-        getById(filmId); // Проверка существования фильма
+        getById(filmId);
         userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.removeLike(filmId, userId);
     }
 
-    // Получение популярных фильмов
     public List<Film> getPopularFilms(int count) {
         if (count <= 0) {
             throw new ValidationException("Количество популярных фильмов должно быть больше 0");
@@ -85,7 +78,6 @@ public class FilmService {
     }
 
     public List<Film> getFilmsByDirector(Long directorId, String sortBy) {
-        // Проверка существования режиссера
         directorDao.getById(directorId)
                 .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
 
@@ -94,7 +86,6 @@ public class FilmService {
                 .map(this::getById)
                 .collect(Collectors.toList());
 
-        // Сортировка
         if ("year".equals(sortBy)) {
             films.sort(Comparator.comparing(Film::getReleaseDate));
         } else if ("likes".equals(sortBy)) {
@@ -104,14 +95,15 @@ public class FilmService {
         return films;
     }
 
-    // Поиск фильмов по названию, описанию или режиссеру
     public List<Film> searchFilms(String query, Set<String> by) {
-        if (query == null || query.isBlank()) {
+        if (query == null || query.trim().isEmpty()) {
             throw new ValidationException("Поисковый запрос не может быть пустым");
         }
         if (by == null || by.isEmpty()) {
             throw new ValidationException("Укажите хотя бы одно поле для поиска");
         }
+
+        query = query.trim();
         log.info("Поиск фильмов по запросу: '{}' в полях: {}", query, by);
         List<Film> films = filmDao.searchFilms(query, by);
         log.info("Найдено фильмов: {}", films.size());

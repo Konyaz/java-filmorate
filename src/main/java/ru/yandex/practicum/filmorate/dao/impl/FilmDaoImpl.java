@@ -45,7 +45,6 @@ public class FilmDaoImpl implements FilmDao {
         }, keyHolder);
 
         film.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
-        updateFilmGenres(film);
 
         saveFilmGenres(film);
         saveFilmDirectors(film);
@@ -102,8 +101,10 @@ public class FilmDaoImpl implements FilmDao {
         String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
                 "FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id ORDER BY f.id";
         List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs));
-        // Заполняем directors для каждого фильма
-        films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
+        films.forEach(film -> {
+            film.setGenres(getGenresForFilm(film.getId()));
+            film.setDirectors(getDirectorsForFilm(film.getId()));
+        });
         return films;
     }
 
@@ -115,6 +116,7 @@ public class FilmDaoImpl implements FilmDao {
 
         if (films.isEmpty()) return Optional.empty();
         Film film = films.get(0);
+        film.setGenres(getGenresForFilm(film.getId()));
         film.setDirectors(getDirectorsForFilm(film.getId()));
         return Optional.of(film);
     }
@@ -125,22 +127,26 @@ public class FilmDaoImpl implements FilmDao {
             return Collections.emptyList();
         }
 
+        log.info("Searching films with query: '{}' by fields: {}", query, by);
+
         String sqlBase = "SELECT DISTINCT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
                 "FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id ";
         StringBuilder where = new StringBuilder("WHERE ");
         List<Object> params = new ArrayList<>();
         boolean first = true;
 
+        String searchPattern = "%" + query.toLowerCase() + "%";
+
         if (by.contains("title")) {
             where.append("LOWER(f.name) LIKE ?");
-            params.add("%" + query.toLowerCase() + "%");
+            params.add(searchPattern);
             first = false;
         }
 
         if (by.contains("description")) {
             if (!first) where.append(" OR ");
             where.append("LOWER(f.description) LIKE ?");
-            params.add("%" + query.toLowerCase() + "%");
+            params.add(searchPattern);
             first = false;
         }
 
@@ -148,10 +154,9 @@ public class FilmDaoImpl implements FilmDao {
             if (!first) where.append(" OR ");
             where.append("EXISTS (SELECT 1 FROM film_directors fd JOIN directors d ON fd.director_id=d.id " +
                     "WHERE fd.film_id=f.id AND LOWER(d.name) LIKE ?)");
-            params.add("%" + query.toLowerCase() + "%");
+            params.add(searchPattern);
         }
 
-        // Если ни одно условие не добавилось, возвращаем пустой список
         if (first) {
             return Collections.emptyList();
         }
@@ -159,39 +164,19 @@ public class FilmDaoImpl implements FilmDao {
         where.append(" ORDER BY f.id");
         String sql = sqlBase + where;
 
+        log.info("Executing search SQL: {} with params: {}", sql, params);
+
         try {
             List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
-            // Заполняем directors для найденных фильмов
-            films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
+            films.forEach(film -> {
+                film.setGenres(getGenresForFilm(film.getId()));
+                film.setDirectors(getDirectorsForFilm(film.getId()));
+            });
+            log.info("Found {} films", films.size());
             return films;
         } catch (Exception e) {
-            // Если есть проблемы с таблицей директоров, возвращаем поиск только по названию и описанию
-            if (e.getMessage().contains("directors") || e.getMessage().contains("film_directors")) {
-                // Перестраиваем запрос без директоров
-                where = new StringBuilder("WHERE ");
-                params.clear();
-                first = true;
-
-                if (by.contains("title")) {
-                    where.append("LOWER(f.name) LIKE ?");
-                    params.add("%" + query.toLowerCase() + "%");
-                    first = false;
-                }
-
-                if (by.contains("description")) {
-                    if (!first) where.append(" OR ");
-                    where.append("LOWER(f.description) LIKE ?");
-                    params.add("%" + query.toLowerCase() + "%");
-                }
-
-                where.append(" ORDER BY f.id");
-                sql = sqlBase + where;
-
-                List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
-                films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
-                return films;
-            }
-            throw e;
+            log.error("Error during search", e);
+            return Collections.emptyList();
         }
     }
 
@@ -204,8 +189,10 @@ public class FilmDaoImpl implements FilmDao {
                 "ORDER BY COUNT(l.user_id) DESC " +
                 "LIMIT ?";
         List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), count);
-        // Заполняем directors для популярных фильмов
-        films.forEach(film -> film.setDirectors(getDirectorsForFilm(film.getId())));
+        films.forEach(film -> {
+            film.setGenres(getGenresForFilm(film.getId()));
+            film.setDirectors(getDirectorsForFilm(film.getId()));
+        });
         return films;
     }
 
@@ -214,19 +201,6 @@ public class FilmDaoImpl implements FilmDao {
         String sql = "SELECT COUNT(*) FROM films WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
         return count != null && count > 0;
-    }
-
-    private List<Genre> getGenresByFilmId(Long filmId) {
-        String sql = "SELECT g.id, g.name FROM film_genres fg JOIN genres g ON fg.genre_id=g.id WHERE fg.film_id=?";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new Genre(rs.getLong("id"), rs.getString("name")), filmId);
-    }
-
-    private void updateFilmGenres(Film film) {
-        if (film.getGenres() == null || film.getGenres().isEmpty()) return;
-        String sql = "MERGE INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-        for (Genre genre : film.getGenres()) {
-            jdbcTemplate.update(sql, film.getId(), genre.getId());
-        }
     }
 
     private Film mapRowToFilm(java.sql.ResultSet rs) throws java.sql.SQLException {
@@ -242,39 +216,45 @@ public class FilmDaoImpl implements FilmDao {
         mpa.setName(rs.getString("mpa_name"));
         film.setMpa(mpa);
 
-        List<Genre> genres = getGenresForFilm(film.getId());
-        film.setGenres(genres);
-        // Directors будут заполнены позже в отдельных вызовах
-
         return film;
     }
 
     private List<Director> getDirectorsForFilm(Long filmId) {
-        List<Long> directorIds = filmDirectorDao.getDirectorIdsByFilmId(filmId);
-        return directorIds.stream()
-                .map(id -> directorDao.getById(id).orElse(null))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        try {
+            List<Long> directorIds = filmDirectorDao.getDirectorIdsByFilmId(filmId);
+            return directorIds.stream()
+                    .map(id -> directorDao.getById(id).orElse(null))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Error getting directors for film {}: {}", filmId, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private List<Genre> getGenresForFilm(Long filmId) {
-        final String sql = "SELECT g.id, g.name " +
-                "FROM film_genres fg " +
-                "JOIN genres g ON fg.genre_id = g.id " +
-                "WHERE fg.film_id = ? " +
-                "ORDER BY g.id";
+        try {
+            final String sql = "SELECT g.id, g.name " +
+                    "FROM film_genres fg " +
+                    "JOIN genres g ON fg.genre_id = g.id " +
+                    "WHERE fg.film_id = ? " +
+                    "ORDER BY g.id";
 
-        return jdbcTemplate.query(sql, (rs, rn) -> {
-            Genre genre = new Genre();
-            genre.setId(rs.getLong("id"));
-            genre.setName(rs.getString("name"));
-            return genre;
-        }, filmId);
+            return jdbcTemplate.query(sql, (rs, rn) -> {
+                Genre genre = new Genre();
+                genre.setId(rs.getLong("id"));
+                genre.setName(rs.getString("name"));
+                return genre;
+            }, filmId);
+        } catch (Exception e) {
+            log.warn("Error getting genres for film {}: {}", filmId, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     public Boolean exists(Long id) {
         String sql = "SELECT COUNT(*) FROM films WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
-        return count != 0;
+        return count != null && count > 0;
     }
 }
