@@ -17,11 +17,6 @@ class FilmorateApplicationTests {
     private UserController userController;
 
     @Test
-    void contextLoads() {
-        // Проверка, что контекст Spring загружается
-    }
-
-    @Test
     void filmControllerLoads() {
         assertNotNull(filmController, "FilmController должен быть загружен в контекст Spring");
     }
