@@ -66,7 +66,7 @@ public class FilmController {
     @GetMapping("/search")
     public List<Film> searchFilms(
             @RequestParam String query,
-            @RequestParam String by
+            @RequestParam(defaultValue = "title") String by
     ) {
         log.info("GET /films/search?query={}&by={}", query, by);
 
@@ -75,11 +75,17 @@ public class FilmController {
             throw new ValidationException("Поисковый запрос не может быть пустым");
         }
 
-        // Преобразуем строку "title,director" в Set<String>
+        // Валидация параметра by
+        Set<String> validFields = Set.of("title", "director", "description");
         Set<String> searchFields = Arrays.stream(by.split(","))
                 .map(String::trim)
                 .map(String::toLowerCase)
+                .filter(validFields::contains)
                 .collect(Collectors.toSet());
+
+        if (searchFields.isEmpty()) {
+            throw new ValidationException("Параметр 'by' должен содержать одно из значений: title, director, description");
+        }
 
         return filmService.searchFilms(query, searchFields);
     }

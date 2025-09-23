@@ -115,10 +115,43 @@ public class FilmDaoImpl implements FilmDao {
             params.add("%" + query.toLowerCase() + "%");
         }
 
+        // Если ни одно условие не добавилось, возвращаем пустой список
+        if (first) {
+            return Collections.emptyList();
+        }
+
         where.append(" ORDER BY f.id");
         String sql = sqlBase + where;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+        try {
+            return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+        } catch (Exception e) {
+            // Если есть проблемы с таблицей директоров, возвращаем поиск только по названию и описанию
+            if (e.getMessage().contains("directors") || e.getMessage().contains("film_directors")) {
+                // Перестраиваем запрос без директоров
+                where = new StringBuilder("WHERE ");
+                params.clear();
+                first = true;
+
+                if (by.contains("title")) {
+                    where.append("LOWER(f.name) LIKE ?");
+                    params.add("%" + query.toLowerCase() + "%");
+                    first = false;
+                }
+
+                if (by.contains("description")) {
+                    if (!first) where.append(" OR ");
+                    where.append("LOWER(f.description) LIKE ?");
+                    params.add("%" + query.toLowerCase() + "%");
+                }
+
+                where.append(" ORDER BY f.id");
+                sql = sqlBase + where;
+
+                return jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+            }
+            throw e;
+        }
     }
 
     @Override
