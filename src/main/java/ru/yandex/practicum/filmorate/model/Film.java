@@ -46,6 +46,10 @@ public class Film {
     public void addDirector(Director director) {
         if (!directors.contains(director)) {
             directors.add(director);
+
+    public void setMpaId(Long mpaId) {
+        if (mpa == null) {
+            mpa = new Mpa();
         }
     }
 }

@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -110,6 +111,41 @@ public class FilmService {
             throw new ValidationException("Укажите хотя бы одно поле для поиска");
         }
         return filmDao.searchFilms(query, by);
+    }
+
+    public List<Film> getFilmsByDirector(Long directorId, String sortBy) {
+        // Проверка существования режиссера
+        directorDao.getById(directorId)
+                .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
+
+        List<Long> filmIds = filmDirectorDao.getFilmIdsByDirectorId(directorId);
+        List<Film> films = filmIds.stream()
+                .map(this::getById)
+                .collect(Collectors.toList());
+
+        // Сортировка
+        if ("year".equals(sortBy)) {
+            films.sort(Comparator.comparing(Film::getReleaseDate));
+        } else if ("likes".equals(sortBy)) {
+            films.sort(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()));
+        }
+
+        return films;
+    }
+
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        log.info("Получение общих фильмов пользователей {} и {}", userId, friendId);
+        List<Long> userLikes = likeDao.getUserLikedFilmsId(userId);
+        List<Long> friendLikes = likeDao.getUserLikedFilmsId(friendId);
+
+        return userLikes.stream()
+                .filter(friendLikes::contains)
+                .map(filmDao::getById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                // используется та же сортировка по популярности что и в методе выше
+                .sorted(Comparator.comparingInt(film -> -likeDao.getLikes(film.getId()).size()))
+                .toList();
     }
 
     private void validate(Film film) {
