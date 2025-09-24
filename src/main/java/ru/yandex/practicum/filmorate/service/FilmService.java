@@ -48,12 +48,18 @@ public class FilmService {
     }
 
     public List<Film> getAll() {
-        return filmDao.getAll();
+        log.info("Получение всех фильмов");
+        List<Film> films = filmDao.getAll();
+        log.info("Найдено фильмов: {}", films.size());
+        return films;
     }
 
     public Film getById(Long id) {
-        return filmDao.getById(id)
+        log.info("Получение фильма с ID: {}", id);
+        Film film = filmDao.getById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
+        log.info("Найден фильм: {}", film.getName());
+        return film;
     }
 
     public void addLike(Long filmId, Long userId) {
@@ -61,6 +67,7 @@ public class FilmService {
         userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.addLike(filmId, userId);
+        log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -68,16 +75,21 @@ public class FilmService {
         userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.removeLike(filmId, userId);
+        log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
     }
 
     public List<Film> getPopularFilms(int count) {
         if (count <= 0) {
             throw new ValidationException("Количество популярных фильмов должно быть больше 0");
         }
-        return filmDao.getPopular(count);
+        log.info("Получение {} популярных фильмов", count);
+        List<Film> films = filmDao.getPopular(count);
+        log.info("Найдено популярных фильмов: {}", films.size());
+        return films;
     }
 
     public List<Film> getFilmsByDirector(Long directorId, String sortBy) {
+        log.info("Получение фильмов режиссера {} с сортировкой по {}", directorId, sortBy);
         directorDao.getById(directorId)
                 .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
 
@@ -92,6 +104,7 @@ public class FilmService {
             films.sort(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()));
         }
 
+        log.info("Найдено фильмов режиссера: {}", films.size());
         return films;
     }
 
@@ -107,6 +120,14 @@ public class FilmService {
         log.info("Поиск фильмов по запросу: '{}' в полях: {}", query, by);
         List<Film> films = filmDao.searchFilms(query, by);
         log.info("Найдено фильмов: {}", films.size());
+
+        // Логируем найденные фильмы для отладки
+        films.forEach(film -> {
+            log.info("Найден фильм: ID={}, Name={}, Directors={}",
+                    film.getId(), film.getName(),
+                    film.getDirectors().stream().map(Director::getName).collect(Collectors.toList()));
+        });
+
         return films;
     }
 
@@ -115,13 +136,16 @@ public class FilmService {
         List<Long> userLikes = likeDao.getUserLikedFilmsId(userId);
         List<Long> friendLikes = likeDao.getUserLikedFilmsId(friendId);
 
-        return userLikes.stream()
+        List<Film> commonFilms = userLikes.stream()
                 .filter(friendLikes::contains)
                 .map(filmDao::getById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .sorted(Comparator.comparingInt(film -> -likeDao.getLikes(film.getId()).size()))
                 .toList();
+
+        log.info("Найдено общих фильмов: {}", commonFilms.size());
+        return commonFilms;
     }
 
     private void validate(Film film) {

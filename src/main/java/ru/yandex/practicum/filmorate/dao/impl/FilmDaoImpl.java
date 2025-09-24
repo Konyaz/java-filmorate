@@ -129,45 +129,55 @@ public class FilmDaoImpl implements FilmDao {
 
         log.info("Searching films with query: '{}' by fields: {}", query, by);
 
-        String sqlBase = "SELECT DISTINCT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
-                "FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id ";
-        StringBuilder where = new StringBuilder("WHERE ");
+        // Создаем базовый SQL запрос
+        StringBuilder sqlBuilder = new StringBuilder();
+        sqlBuilder.append("SELECT DISTINCT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name ")
+                .append("FROM films f ")
+                .append("LEFT JOIN mpa m ON f.mpa_id = m.id ");
+
         List<Object> params = new ArrayList<>();
-        boolean first = true;
+        List<String> conditions = new ArrayList<>();
 
         String searchPattern = "%" + query.toLowerCase() + "%";
 
-        if (by.contains("title")) {
-            where.append("LOWER(f.name) LIKE ?");
-            params.add(searchPattern);
-            first = false;
+        // Добавляем JOIN для директоров если нужно искать по режиссеру
+        if (by.contains("director")) {
+            sqlBuilder.append("LEFT JOIN film_directors fd ON f.id = fd.film_id ")
+                    .append("LEFT JOIN directors d ON fd.director_id = d.id ");
         }
 
-        if (by.contains("description")) {
-            if (!first) where.append(" OR ");
-            where.append("LOWER(f.description) LIKE ?");
+        sqlBuilder.append("WHERE ");
+
+        // Добавляем условия поиска
+        if (by.contains("title")) {
+            conditions.add("LOWER(f.name) LIKE ?");
             params.add(searchPattern);
-            first = false;
         }
 
         if (by.contains("director")) {
-            if (!first) where.append(" OR ");
-            where.append("EXISTS (SELECT 1 FROM film_directors fd JOIN directors d ON fd.director_id=d.id " +
-                    "WHERE fd.film_id=f.id AND LOWER(d.name) LIKE ?)");
+            conditions.add("LOWER(d.name) LIKE ?");
             params.add(searchPattern);
         }
 
-        if (first) {
+        // Добавляем условие для поиска по описанию
+        if (by.contains("description")) {
+            conditions.add("LOWER(f.description) LIKE ?");
+            params.add(searchPattern);
+        }
+
+        if (conditions.isEmpty()) {
             return Collections.emptyList();
         }
 
-        where.append(" ORDER BY f.id");
-        String sql = sqlBase + where;
+        sqlBuilder.append(String.join(" OR ", conditions));
+        sqlBuilder.append(" ORDER BY f.id");
 
+        String sql = sqlBuilder.toString();
         log.info("Executing search SQL: {} with params: {}", sql, params);
 
         try {
             List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
+            // Заполняем жанры и режиссеров для найденных фильмов
             films.forEach(film -> {
                 film.setGenres(getGenresForFilm(film.getId()));
                 film.setDirectors(getDirectorsForFilm(film.getId()));
@@ -175,9 +185,29 @@ public class FilmDaoImpl implements FilmDao {
             log.info("Found {} films", films.size());
             return films;
         } catch (Exception e) {
-            log.error("Error during search", e);
+            log.error("Error during search: {}", e.getMessage(), e);
+            // Если произошла ошибка, попробуем упрощенный поиск только по названию
+            if (by.contains("director") || by.contains("description")) {
+                log.info("Trying fallback search without director and description");
+                return searchFilmsFallback(query, by);
+            }
             return Collections.emptyList();
         }
+    }
+
+    private List<Film> searchFilmsFallback(String query, Set<String> by) {
+        String sql = "SELECT DISTINCT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
+                "FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id " +
+                "WHERE LOWER(f.name) LIKE ? ORDER BY f.id";
+
+        String searchPattern = "%" + query.toLowerCase() + "%";
+
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), searchPattern);
+        films.forEach(film -> {
+            film.setGenres(getGenresForFilm(film.getId()));
+            film.setDirectors(getDirectorsForFilm(film.getId()));
+        });
+        return films;
     }
 
     @Override

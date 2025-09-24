@@ -70,13 +70,14 @@ public class FilmController {
     ) {
         log.info("GET /films/search?query={}&by={}", query, by);
 
-        // Проверка пустого запроса
-        if (query == null || query.isBlank()) {
+        if (query == null || query.trim().isEmpty()) {
             throw new ValidationException("Поисковый запрос не может быть пустым");
         }
 
+        query = query.trim();
+
         // Валидация параметра by
-        Set<String> validFields = Set.of("title", "director");
+        Set<String> validFields = Set.of("title", "director", "description");
         Set<String> searchFields = Arrays.stream(by.split(","))
                 .map(String::trim)
                 .map(String::toLowerCase)
@@ -84,9 +85,10 @@ public class FilmController {
                 .collect(Collectors.toSet());
 
         if (searchFields.isEmpty()) {
-            throw new ValidationException("Параметр 'by' должен содержать одно из значений: title, director");
+            throw new ValidationException("Параметр 'by' должен содержать одно из значений: title, director, description");
         }
 
+        log.info("Searching for films with query '{}' in fields: {}", query, searchFields);
         return filmService.searchFilms(query, searchFields);
     }
 
