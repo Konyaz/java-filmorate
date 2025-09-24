@@ -1,9 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import jakarta.validation.Valid;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
@@ -25,17 +23,16 @@ import static ru.yandex.practicum.filmorate.util.ActionsId.*;
 
 @Slf4j
 @Service
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class FilmService {
-    FilmDao filmDao;
-    UserDao userDao;
-    LikeDao likeDao;
-    MpaDao mpaDao;
-    GenreDao genreDao;
-    FilmDirectorDao filmDirectorDao;
-    DirectorDao directorDao;
-    EventDao eventDao;
+    private final FilmDao filmDao;
+    private final UserDao userDao;
+    private final LikeDao likeDao;
+    private final MpaDao mpaDao;
+    private final GenreDao genreDao;
+    private final FilmDirectorDao filmDirectorDao;
+    private final DirectorDao directorDao;
+    private final EventDao eventDao;
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
