@@ -81,11 +81,13 @@ public class ReviewService {
             throw new NotFoundException("пользователя с указанным userId не существует");
         }
 
+        Review created = storage.create(newReview);
+
         eventDao.saveEvent(
-                new EventDto(newReview.getUserId(), newReview.getFilmId(), REVIEW.getId(), ADD.getId(), Instant.now())
+                new EventDto(newReview.getUserId(), created.getReviewId(), REVIEW.getId(), ADD.getId(), Instant.now())
         );
 
-        return storage.create(newReview);
+        return created;
     }
 
     public Review update(Review review) {
@@ -115,7 +117,7 @@ public class ReviewService {
         }
 
         eventDao.saveEvent(
-                new EventDto(review.getUserId(), review.getFilmId(), REVIEW.getId(), UPDATE.getId(), Instant.now())
+                new EventDto(review.getUserId(), review.getReviewId(), REVIEW.getId(), UPDATE.getId(), Instant.now())
         );
 
         return storage.update(review);
@@ -129,7 +131,7 @@ public class ReviewService {
 
         Review deleted = get(id);
         eventDao.saveEvent(
-                new EventDto(deleted.getUserId(), deleted.getFilmId(), REVIEW.getId(), REMOVE.getId(), Instant.now())
+                new EventDto(deleted.getUserId(), id, REVIEW.getId(), REMOVE.getId(), Instant.now())
         );
 
         storage.delete(id);
