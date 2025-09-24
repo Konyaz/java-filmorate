@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
+import ru.yandex.practicum.filmorate.util.serializer.InstantSerializer;
 
 import java.time.Instant;
 
@@ -24,5 +26,6 @@ public class Event {
 
     String operation;
 
+    @JsonSerialize(using = InstantSerializer.class)
     Instant timestamp;
 }
