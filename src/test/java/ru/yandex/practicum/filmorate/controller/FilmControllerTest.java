@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,7 +19,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -260,11 +259,90 @@ class FilmControllerTest {
         popularFilm.setName("Popular Film");
         popularFilm.setMpa(new Mpa(1L, "G"));
 
-        when(filmService.getPopularFilms(5)).thenReturn(List.of(popularFilm));
+        // Исправлено: теперь метод принимает три параметра
+        when(filmService.getPopularFilms(5, null, null)).thenReturn(List.of(popularFilm));
 
         mockMvc.perform(get("/films/popular?count=5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1L));
+    }
+
+    @Test
+    void getPopularFilms_withGenreFilter_success() throws Exception {
+        Film comedyFilm = new Film();
+        comedyFilm.setId(2L);
+        comedyFilm.setName("Comedy Film");
+        comedyFilm.setMpa(new Mpa(1L, "G"));
+
+        // Тест с фильтром по жанру
+        when(filmService.getPopularFilms(10, 1, null)).thenReturn(List.of(comedyFilm));
+
+        mockMvc.perform(get("/films/popular?count=10&genreId=1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(2L));
+    }
+
+    @Test
+    void getPopularFilms_withYearFilter_success() throws Exception {
+        Film yearFilm = new Film();
+        yearFilm.setId(3L);
+        yearFilm.setName("2020 Film");
+        yearFilm.setMpa(new Mpa(1L, "G"));
+
+        // Тест с фильтром по году
+        when(filmService.getPopularFilms(5, null, 2020)).thenReturn(List.of(yearFilm));
+
+        mockMvc.perform(get("/films/popular?count=5&year=2020"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(3L));
+    }
+
+    @Test
+    void getPopularFilms_withGenreAndYearFilter_success() throws Exception {
+        Film filteredFilm = new Film();
+        filteredFilm.setId(4L);
+        filteredFilm.setName("Filtered Film");
+        filteredFilm.setMpa(new Mpa(1L, "G"));
+
+        // Тест с фильтрами по жанру и году
+        when(filmService.getPopularFilms(3, 2, 2019)).thenReturn(List.of(filteredFilm));
+
+        mockMvc.perform(get("/films/popular?count=3&genreId=2&year=2019"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(4L));
+    }
+
+    @Test
+    void getPopularFilms_invalidCountParameter() throws Exception {
+        // Тест с невалидным параметром count
+        when(filmService.getPopularFilms(-1, null, null))
+                .thenThrow(new ru.yandex.practicum.filmorate.exception.ValidationException("Количество популярных фильмов должно быть больше 0"));
+
+        mockMvc.perform(get("/films/popular?count=-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getPopularFilms_invalidGenreIdParameter() throws Exception {
+        // Тест с невалидным параметром genreId
+        when(filmService.getPopularFilms(5, -1, null))
+                .thenThrow(new ru.yandex.practicum.filmorate.exception.ValidationException("ID жанра должен быть положительным числом"));
+
+        mockMvc.perform(get("/films/popular?count=5&genreId=-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getPopularFilms_invalidYearParameter() throws Exception {
+        // Тест с невалидным параметром year
+        when(filmService.getPopularFilms(5, null, 1800))
+                .thenThrow(new ru.yandex.practicum.filmorate.exception.ValidationException("Год должен быть в диапазоне от 1895 до текущего года"));
+
+        mockMvc.perform(get("/films/popular?count=5&year=1800"))
+                .andExpect(status().isBadRequest());
     }
 }

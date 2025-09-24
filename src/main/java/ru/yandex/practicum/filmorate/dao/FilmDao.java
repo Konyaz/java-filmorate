@@ -18,7 +18,7 @@ public interface FilmDao {
 
     List<Film> searchFilms(String query, Set<String> by);
 
-    List<Film> getPopular(int count);
+    List<Film> getPopular(int count, Integer genreId, Integer year);
 
     boolean existsById(Long id);
 }

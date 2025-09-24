@@ -78,12 +78,21 @@ public class FilmService {
         log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
     }
 
-    public List<Film> getPopularFilms(int count) {
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
         if (count <= 0) {
             throw new ValidationException("Количество популярных фильмов должно быть больше 0");
         }
-        log.info("Получение {} популярных фильмов", count);
-        List<Film> films = filmDao.getPopular(count);
+
+        if (genreId != null && genreId <= 0) {
+            throw new ValidationException("ID жанра должен быть положительным числом");
+        }
+
+        if (year != null && (year < 1895 || year > LocalDate.now().getYear())) {
+            throw new ValidationException("Год должен быть в диапазоне от 1895 до текущего года");
+        }
+
+        log.info("Получение {} популярных фильмов с фильтром по жанру {} и году {}", count, genreId, year);
+        List<Film> films = filmDao.getPopular(count, genreId, year);
         log.info("Найдено популярных фильмов: {}", films.size());
         return films;
     }

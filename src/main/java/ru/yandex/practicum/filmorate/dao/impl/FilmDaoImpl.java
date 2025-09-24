@@ -211,14 +211,44 @@ public class FilmDaoImpl implements FilmDao {
     }
 
     @Override
-    public List<Film> getPopular(int count) {
-        String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
-                "FROM films f LEFT JOIN mpa m ON f.mpa_id=m.id " +
-                "LEFT JOIN likes l ON f.id=l.film_id " +
-                "GROUP BY f.id, m.name " +
-                "ORDER BY COUNT(l.user_id) DESC " +
-                "LIMIT ?";
-        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), count);
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        sqlBuilder.append("SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name ")
+                .append("FROM films f ")
+                .append("LEFT JOIN mpa m ON f.mpa_id = m.id ")
+                .append("LEFT JOIN likes l ON f.id = l.film_id ");
+
+        List<Object> params = new ArrayList<>();
+
+        // Добавляем условия фильтрации
+        if (genreId != null || year != null) {
+            sqlBuilder.append("WHERE ");
+            List<String> conditions = new ArrayList<>();
+
+            if (genreId != null) {
+                sqlBuilder.append("EXISTS (SELECT 1 FROM film_genres fg WHERE fg.film_id = f.id AND fg.genre_id = ?) ");
+                params.add(genreId);
+                conditions.add(""); // Добавляем пустую строку для правильного соединения условий
+            }
+
+            if (year != null) {
+                if (!conditions.isEmpty()) {
+                    sqlBuilder.append("AND ");
+                }
+                sqlBuilder.append("YEAR(f.release_date) = ? ");
+                params.add(year);
+            }
+        }
+
+        sqlBuilder.append("GROUP BY f.id, m.name ")
+                .append("ORDER BY COUNT(l.user_id) DESC ")
+                .append("LIMIT ?");
+        params.add(count);
+
+        String sql = sqlBuilder.toString();
+        log.info("Executing popular films SQL: {} with params: {}", sql, params);
+
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapRowToFilm(rs), params.toArray());
         films.forEach(film -> {
             film.setGenres(getGenresForFilm(film.getId()));
             film.setDirectors(getDirectorsForFilm(film.getId()));
