@@ -15,19 +15,21 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FilmService {
+
     private final FilmDao filmDao;
-    private final UserDao userDao;
-    private final LikeDao likeDao;
     private final MpaDao mpaDao;
     private final GenreDao genreDao;
     private final FilmDirectorDao filmDirectorDao;
     private final DirectorDao directorDao;
+    private final UserDao userDao;
+    private final LikeDao likeDao;
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
@@ -47,43 +49,47 @@ public class FilmService {
 
     public List<Film> getAll() {
         log.info("Получение всех фильмов");
-        return filmDao.getAll();
+        List<Film> films = filmDao.getAll();
+        log.info("Найдено фильмов: {}", films.size());
+        return films;
     }
 
     public Film getById(Long id) {
         log.info("Получение фильма с ID: {}", id);
-        return filmDao.getById(id)
+        Film film = filmDao.getById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с ID " + id + " не найден"));
+        log.info("Найден фильм: {}", film.getName());
+        return film;
     }
 
     public void addLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
+        getById(filmId);
         userDao.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-
+                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.addLike(filmId, userId);
         log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
     }
 
     public void removeLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
+        getById(filmId);
         userDao.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-
+                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.removeLike(filmId, userId);
-        log.info("Пользователь {} убрал лайк с фильма {}", userId, filmId);
+        log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
     }
 
     public List<Film> getPopularFilms(int count) {
+        if (count <= 0) {
+            throw new ValidationException("Количество популярных фильмов должно быть больше 0");
+        }
         log.info("Получение {} популярных фильмов", count);
-        return filmDao.getAll().stream()
-                .sorted(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()))
-                .limit(count)
-                .collect(Collectors.toList());
+        List<Film> films = filmDao.getPopular(count);
+        log.info("Найдено популярных фильмов: {}", films.size());
+        return films;
     }
 
     public List<Film> getFilmsByDirector(Long directorId, String sortBy) {
-        // Проверка существования режиссера
+        log.info("Получение фильмов режиссера {} с сортировкой по {}", directorId, sortBy);
         directorDao.getById(directorId)
                 .orElseThrow(() -> new NotFoundException("Режиссер с ID " + directorId + " не найден"));
 
@@ -92,12 +98,35 @@ public class FilmService {
                 .map(this::getById)
                 .collect(Collectors.toList());
 
-        // Сортировка
         if ("year".equals(sortBy)) {
             films.sort(Comparator.comparing(Film::getReleaseDate));
         } else if ("likes".equals(sortBy)) {
             films.sort(Comparator.comparingInt(f -> -likeDao.getLikes(f.getId()).size()));
         }
+
+        log.info("Найдено фильмов режиссера: {}", films.size());
+        return films;
+    }
+
+    public List<Film> searchFilms(String query, Set<String> by) {
+        if (query == null || query.trim().isEmpty()) {
+            throw new ValidationException("Поисковый запрос не может быть пустым");
+        }
+        if (by == null || by.isEmpty()) {
+            throw new ValidationException("Укажите хотя бы одно поле для поиска");
+        }
+
+        query = query.trim();
+        log.info("Поиск фильмов по запросу: '{}' в полях: {}", query, by);
+        List<Film> films = filmDao.searchFilms(query, by);
+        log.info("Найдено фильмов: {}", films.size());
+
+        // Логируем найденные фильмы для отладки
+        films.forEach(film -> {
+            log.info("Найден фильм: ID={}, Name={}, Directors={}",
+                    film.getId(), film.getName(),
+                    film.getDirectors().stream().map(Director::getName).collect(Collectors.toList()));
+        });
 
         return films;
     }
@@ -107,26 +136,31 @@ public class FilmService {
         List<Long> userLikes = likeDao.getUserLikedFilmsId(userId);
         List<Long> friendLikes = likeDao.getUserLikedFilmsId(friendId);
 
-        return userLikes.stream()
+        List<Film> commonFilms = userLikes.stream()
                 .filter(friendLikes::contains)
                 .map(filmDao::getById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                // используется та же сортировка по популярности что и в методе выше
                 .sorted(Comparator.comparingInt(film -> -likeDao.getLikes(film.getId()).size()))
                 .toList();
+
+        log.info("Найдено общих фильмов: {}", commonFilms.size());
+        return commonFilms;
     }
 
     private void validate(Film film) {
         if (film.getReleaseDate() == null) {
             throw new ValidationException("Дата релиза обязательна");
         }
+
         if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
         }
+
         if (film.getMpa() == null) {
             throw new ValidationException("Рейтинг MPA обязателен");
         }
+
         if (film.getMpa().getId() == null) {
             throw new ValidationException("ID рейтинга MPA обязателен");
         }

@@ -4,10 +4,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -57,6 +61,35 @@ public class FilmController {
     public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
         log.info("GET /films/popular?count={}", count);
         return filmService.getPopularFilms(count);
+    }
+
+    @GetMapping("/search")
+    public List<Film> searchFilms(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "title") String by
+    ) {
+        log.info("GET /films/search?query={}&by={}", query, by);
+
+        if (query == null || query.trim().isEmpty()) {
+            throw new ValidationException("Поисковый запрос не может быть пустым");
+        }
+
+        query = query.trim();
+
+        // Валидация параметра by
+        Set<String> validFields = Set.of("title", "director", "description");
+        Set<String> searchFields = Arrays.stream(by.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .filter(validFields::contains)
+                .collect(Collectors.toSet());
+
+        if (searchFields.isEmpty()) {
+            throw new ValidationException("Параметр 'by' должен содержать одно из значений: title, director, description");
+        }
+
+        log.info("Searching for films with query '{}' in fields: {}", query, searchFields);
+        return filmService.searchFilms(query, searchFields);
     }
 
     @GetMapping("/director/{directorId}")

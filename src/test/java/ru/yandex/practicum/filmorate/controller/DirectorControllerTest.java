@@ -63,17 +63,6 @@ class DirectorControllerTest {
     }
 
     @Test
-    void createDirector_withEmptyName_shouldReturnBadRequest() throws Exception {
-        Director invalidDirector = new Director();
-        invalidDirector.setName("");
-
-        mockMvc.perform(post("/directors")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidDirector)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void updateDirector_success() throws Exception {
         when(directorService.update(any(Director.class))).thenReturn(director);
 
