@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import ru.yandex.practicum.filmorate.dao.EventDao;
 import ru.yandex.practicum.filmorate.dao.UserDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -20,6 +21,8 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
     @Mock
     private UserDao userStorage;
+    @Mock
+    private EventDao eventStorage;
     @InjectMocks
     private UserService userService;
 

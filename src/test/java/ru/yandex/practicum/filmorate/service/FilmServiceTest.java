@@ -43,6 +43,9 @@ class FilmServiceTest {
     @Mock
     private GenreDao genreDao;
 
+    @Mock
+    private EventDao eventDao;
+
     @InjectMocks
     private FilmService filmService;
 

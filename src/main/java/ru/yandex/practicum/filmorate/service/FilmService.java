@@ -5,18 +5,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
+import ru.yandex.practicum.filmorate.dto.EventDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static ru.yandex.practicum.filmorate.util.ActionsId.*;
 
 @Slf4j
 @Service
@@ -30,6 +34,7 @@ public class FilmService {
     private final DirectorDao directorDao;
     private final UserDao userDao;
     private final LikeDao likeDao;
+    private final EventDao eventDao;
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
@@ -68,6 +73,8 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.addLike(filmId, userId);
         log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
+
+        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -76,6 +83,8 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         likeDao.removeLike(filmId, userId);
         log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
+
+        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {

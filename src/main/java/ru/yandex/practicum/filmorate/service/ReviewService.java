@@ -3,6 +3,8 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.EventDao;
+import ru.yandex.practicum.filmorate.dto.EventDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
@@ -10,8 +12,11 @@ import ru.yandex.practicum.filmorate.dao.impl.FilmDaoImpl;
 import ru.yandex.practicum.filmorate.dao.impl.ReviewDaoImpl;
 import ru.yandex.practicum.filmorate.dao.impl.UserDaoImpl;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+
+import static ru.yandex.practicum.filmorate.util.ActionsId.*;
 
 @Slf4j
 @Service
@@ -20,6 +25,7 @@ public class ReviewService {
     public final ReviewDaoImpl storage;
     public final FilmDaoImpl filmStorage;
     public final UserDaoImpl userStorage;
+    private final EventDao eventDao;
 
     public Collection<Review> getListByFilmId(Long filmId, Integer count) {
         if (count <= 0) {
@@ -75,6 +81,10 @@ public class ReviewService {
             throw new NotFoundException("пользователя с указанным userId не существует");
         }
 
+        eventDao.saveEvent(
+                new EventDto(newReview.getUserId(), newReview.getFilmId(), REVIEW.getId(), ADD.getId(), Instant.now())
+        );
+
         return storage.create(newReview);
     }
 
@@ -104,6 +114,10 @@ public class ReviewService {
             throw new NotFoundException("пользователя с указанным userId не существует");
         }
 
+        eventDao.saveEvent(
+                new EventDto(review.getUserId(), review.getFilmId(), REVIEW.getId(), UPDATE.getId(), Instant.now())
+        );
+
         return storage.update(review);
     }
 
@@ -112,6 +126,12 @@ public class ReviewService {
             log.error("Отзыв с указанным id не существует");
             throw new NotFoundException("Отзыв с указанным id не существует");
         }
+
+        Review deleted = get(id);
+        eventDao.saveEvent(
+                new EventDto(deleted.getUserId(), deleted.getFilmId(), REVIEW.getId(), REMOVE.getId(), Instant.now())
+        );
+
         storage.delete(id);
     }
 
@@ -133,6 +153,8 @@ public class ReviewService {
         if (storage.dislikeExists(id, userId)) {
             storage.removeDislike(id, userId);
         }
+
+        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), ADD.getId(), Instant.now()));
 
         storage.addLike(id, userId);
     }
@@ -156,6 +178,8 @@ public class ReviewService {
             storage.removeLike(id, userId);
         }
 
+        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), ADD.getId(), Instant.now()));
+
         storage.addDislike(id, userId);
     }
 
@@ -173,6 +197,8 @@ public class ReviewService {
             throw new NotFoundException("Пользователь с указанным id не ставил лайк этому отзыву");
         }
 
+        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), REMOVE.getId(), Instant.now()));
+
         storage.removeLike(id, userId);
     }
 
@@ -189,6 +215,8 @@ public class ReviewService {
             log.error("Пользователь с указанным id не ставил дизлайк этому отзыву");
             throw new NotFoundException("Пользователь с указанным id не ставил дизлайк этому отзыву");
         }
+
+        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), REMOVE.getId(), Instant.now()));
 
         storage.removeDislike(id, userId);
     }
