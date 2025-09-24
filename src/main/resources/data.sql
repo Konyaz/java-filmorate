@@ -10,3 +10,12 @@ MERGE INTO genres (id, name) VALUES (3, 'Мультфильм');
 MERGE INTO genres (id, name) VALUES (4, 'Триллер');
 MERGE INTO genres (id, name) VALUES (5, 'Документальный');
 MERGE INTO genres (id, name) VALUES (6, 'Боевик');
+
+MERGE INTO event_types (id, name) VALUES (1, 'LIKE');
+MERGE INTO event_types (id, name) VALUES (2, 'REVIEW');
+MERGE INTO event_types (id, name) VALUES (3, 'FRIEND');
+MERGE INTO event_types (id, name) VALUES (4, 'DISLIKE');
+
+MERGE INTO operations (id, name) VALUES (1, 'ADD');
+MERGE INTO operations (id, name) VALUES (2, 'REMOVE');
+MERGE INTO operations (id, name) VALUES (3, 'UPDATE');

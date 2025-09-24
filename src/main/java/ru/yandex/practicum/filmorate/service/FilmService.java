@@ -1,33 +1,41 @@
 package ru.yandex.practicum.filmorate.service;
 
 import jakarta.validation.Valid;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.*;
+import ru.yandex.practicum.filmorate.dto.EventDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static ru.yandex.practicum.filmorate.util.ActionsId.*;
+
 @Slf4j
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class FilmService {
-    private final FilmDao filmDao;
-    private final UserDao userDao;
-    private final LikeDao likeDao;
-    private final MpaDao mpaDao;
-    private final GenreDao genreDao;
-    private final FilmDirectorDao filmDirectorDao;
-    private final DirectorDao directorDao;
+    FilmDao filmDao;
+    UserDao userDao;
+    LikeDao likeDao;
+    MpaDao mpaDao;
+    GenreDao genreDao;
+    FilmDirectorDao filmDirectorDao;
+    DirectorDao directorDao;
+    EventDao eventDao;
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
@@ -63,6 +71,8 @@ public class FilmService {
 
         likeDao.addLike(filmId, userId);
         log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
+
+        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -72,6 +82,8 @@ public class FilmService {
 
         likeDao.removeLike(filmId, userId);
         log.info("Пользователь {} убрал лайк с фильма {}", userId, filmId);
+
+        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
     public List<Film> getPopularFilms(int count) {
