@@ -37,3 +37,12 @@ MERGE INTO users (id, email, login, name, birthday) VALUES (1001, 'user2@example
 MERGE INTO likes (film_id, user_id) VALUES (100, 1000);
 MERGE INTO likes (film_id, user_id) VALUES (100, 1001);
 MERGE INTO likes (film_id, user_id) VALUES (200, 1000);
+
+MERGE INTO event_types (id, name) VALUES (1, 'LIKE');
+MERGE INTO event_types (id, name) VALUES (2, 'REVIEW');
+MERGE INTO event_types (id, name) VALUES (3, 'FRIEND');
+MERGE INTO event_types (id, name) VALUES (4, 'DISLIKE');
+
+MERGE INTO operations (id, name) VALUES (1, 'ADD');
+MERGE INTO operations (id, name) VALUES (2, 'REMOVE');
+MERGE INTO operations (id, name) VALUES (3, 'UPDATE');
