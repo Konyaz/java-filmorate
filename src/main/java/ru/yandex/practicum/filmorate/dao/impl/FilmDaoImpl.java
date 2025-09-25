@@ -324,7 +324,7 @@ public class FilmDaoImpl implements FilmDao {
                   AND f.id NOT IN (SELECT film_id FROM likes WHERE user_id = ?)
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rn) -> mapRowToFilm(rs, true),
+        return jdbcTemplate.query(sql, (rs, rn) -> mapRowToFilm(rs),
                 similarUserId, targetUserId);
     }
 
