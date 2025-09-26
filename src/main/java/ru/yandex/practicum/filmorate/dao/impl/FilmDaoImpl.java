@@ -334,4 +334,14 @@ public class FilmDaoImpl implements FilmDao {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
         return count != null && count > 0;
     }
+
+    @Override
+    public void delete(Long filmId) {
+        String sql = "DELETE FROM films WHERE id = ?";
+        int deleted = jdbcTemplate.update(sql, filmId);
+        if (deleted == 0) {
+            throw new NotFoundException("Фильм с ID " + filmId + " не найден");
+        }
+        log.info("Film deleted id={}", filmId);
+    }
 }
