@@ -76,4 +76,5 @@ public class UserController {
     public List<Film> getRecommendations(@PathVariable Long id) {
         return userService.getRecommendations(id);
     }
+
 }

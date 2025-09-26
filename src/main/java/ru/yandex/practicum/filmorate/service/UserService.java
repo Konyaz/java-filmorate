@@ -34,6 +34,7 @@ public class UserService {
         return filmDao.getFilmsLikedByUserButNotAnother(similarUserId, userId);
     }
 
+
     public User create(@Valid User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
