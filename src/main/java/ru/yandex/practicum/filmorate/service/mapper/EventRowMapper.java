@@ -33,7 +33,7 @@ public class EventRowMapper implements RowMapper<Event> {
         );
 
         return Event.builder()
-                .id(rs.getLong("event_id"))
+                .eventId(rs.getLong("event_id"))
                 .userId(rs.getLong("user_id"))
                 .entityId(rs.getLong("entity_id"))
                 .eventType(eventType)

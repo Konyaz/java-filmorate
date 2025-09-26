@@ -16,6 +16,9 @@ public class LikeDaoImpl implements LikeDao {
 
     @Override
     public void addLike(Long filmId, Long userId) {
+        final String del_sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
+        jdbcTemplate.update(del_sql, filmId, userId);
+
         final String sql = "INSERT INTO likes (film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, filmId, userId);
         log.info("Like added: filmId={}, userId={}", filmId, userId);

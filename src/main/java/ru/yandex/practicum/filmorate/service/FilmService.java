@@ -79,20 +79,25 @@ public class FilmService {
         getById(filmId);
         userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
-        likeDao.addLike(filmId, userId);
-        log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
+        List<Long> filmsIds = likeDao.getUserLikedFilmsId(userId);
+        if (!filmsIds.contains(filmId)) {
+            likeDao.addLike(filmId, userId);
+            eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
+            log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
+        }
 
-        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void removeLike(Long filmId, Long userId) {
         getById(filmId);
         userDao.getById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
-        likeDao.removeLike(filmId, userId);
-        log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
-
-        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), REMOVE.getId(), Instant.now()));
+        List<Long> filmsIds = likeDao.getUserLikedFilmsId(userId);
+        if (filmsIds.contains(filmId)) {
+            likeDao.removeLike(filmId, userId);
+            log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
+            eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), REMOVE.getId(), Instant.now()));
+        }
     }
 
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
@@ -142,7 +147,7 @@ public class FilmService {
             throw new ValidationException("Укажите хотя бы одно поле для поиска");
         }
 
-        query = query.trim();
+        query = query.trim().toLowerCase();
         log.info("Поиск фильмов по запросу: '{}' в полях: {}", query, by);
         List<Film> films = filmDao.searchFilms(query, by);
         log.info("Найдено фильмов: {}", films.size());

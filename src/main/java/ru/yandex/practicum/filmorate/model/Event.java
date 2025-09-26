@@ -16,7 +16,7 @@ import java.time.Instant;
 @Builder
 public class Event {
 
-    Long id;
+    Long eventId;
 
     Long userId;
 

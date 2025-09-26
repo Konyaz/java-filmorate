@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.DirectorDao;
 import ru.yandex.practicum.filmorate.dao.FilmDao;
 import ru.yandex.practicum.filmorate.dao.FilmDirectorDao;
+import ru.yandex.practicum.filmorate.dao.LikeDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -28,6 +29,7 @@ public class FilmDaoImpl implements FilmDao {
     private final JdbcTemplate jdbcTemplate;
     private final FilmDirectorDao filmDirectorDao;
     private final DirectorDao directorDao;
+    private final LikeDao likeDao;
 
     @Override
     public Film create(Film film) {
@@ -67,7 +69,6 @@ public class FilmDaoImpl implements FilmDao {
             throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
         }
 
-        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         saveFilmGenres(film);
         filmDirectorDao.removeDirectorsFromFilm(film.getId());
         saveFilmDirectors(film);
@@ -76,14 +77,20 @@ public class FilmDaoImpl implements FilmDao {
     }
 
     private void saveFilmGenres(Film film) {
+
+        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
+
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            Set<Long> uniqueGenreIds = film.getGenres().stream()
-                    .map(Genre::getId)
-                    .collect(Collectors.toSet());
+            Set<Long> seenIds = new HashSet<>();
+            List<Genre> uniqueGenres = film.getGenres().stream()
+                .filter(genre -> seenIds.add(genre.getId())) // add возвращает true если элемента еще не было
+                .collect(Collectors.toList());
+
+            film.setGenres(uniqueGenres);
 
             final String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
-            for (Long genreId : uniqueGenreIds) {
-                jdbcTemplate.update(genreSql, film.getId(), genreId);
+            for (Genre genre : uniqueGenres) {
+                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
             }
         }
     }
@@ -170,7 +177,6 @@ public class FilmDaoImpl implements FilmDao {
         }
 
         sqlBuilder.append(String.join(" OR ", conditions));
-        sqlBuilder.append(" ORDER BY f.id");
 
         String sql = sqlBuilder.toString();
         log.info("Executing search SQL: {} with params: {}", sql, params);
@@ -181,9 +187,10 @@ public class FilmDaoImpl implements FilmDao {
             films.forEach(film -> {
                 film.setGenres(getGenresForFilm(film.getId()));
                 film.setDirectors(getDirectorsForFilm(film.getId()));
+                film.setRate(likeDao.getLikes(film.getId()).size());
             });
             log.info("Found {} films", films.size());
-            return films;
+            return films.stream().sorted((f1, f2) -> f2.getRate() - f1.getRate()).collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Error during search: {}", e.getMessage(), e);
             // Если произошла ошибка, попробуем упрощенный поиск только по названию
@@ -324,8 +331,13 @@ public class FilmDaoImpl implements FilmDao {
                   AND f.id NOT IN (SELECT film_id FROM likes WHERE user_id = ?)
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rn) -> mapRowToFilm(rs),
+        List<Film> films = jdbcTemplate.query(sql, (rs, rn) -> mapRowToFilm(rs),
                 similarUserId, targetUserId);
+        films.forEach(film -> {
+            film.setGenres(getGenresForFilm(film.getId()));
+            film.setDirectors(getDirectorsForFilm(film.getId()));
+        });
+        return films;
     }
 
 

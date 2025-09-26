@@ -91,28 +91,32 @@ public class ReviewService {
     }
 
     public Review update(Review review) {
+        if (!storage.exists(review.getReviewId())) {
+            log.error("Ошибка обновления отзыва: отзыва с указанным id не существует");
+            throw new NotFoundException("отзыва с указанным id не существует");
+        }
         if (review.getContent() == null || review.getContent().isBlank()) {
-            log.error("Ошибка добавления отзыва: поле content не может быть пустым");
+            log.error("Ошибка обновления отзыва: поле content не может быть пустым");
             throw new ValidationException("Поле content не может быть пустым");
         }
         if (review.getIsPositive() == null) {
-            log.error("Ошибка добавления отзыва: поле isPositive не может быть пустым");
+            log.error("Ошибка обновления отзыва: поле isPositive не может быть пустым");
             throw new ValidationException("Поле isPositive не может быть пустым");
         }
         if (review.getFilmId() == null) {
-            log.error("Ошибка добавления отзыва: поле filmId не может быть пустым");
+            log.error("Ошибка обновления отзыва: поле filmId не может быть пустым");
             throw new ValidationException("Поле filmId не может быть пустым");
         }
         if (!filmStorage.exists(review.getFilmId())) {
-            log.error("Ошибка добавления отзыва: фильм с указанным filmId не существует");
+            log.error("Ошибка обновления отзыва: фильм с указанным filmId не существует");
             throw new NotFoundException("фильм с указанным filmId не существует");
         }
         if (review.getUserId() == null) {
-            log.error("Ошибка добавления отзыва: поле filmId не может быть пустым");
+            log.error("Ошибка обновления отзыва: поле filmId не может быть пустым");
             throw new ValidationException("Поле filmId не может быть пустым");
         }
         if (!userStorage.exists(review.getUserId())) {
-            log.error("Ошибка добавления отзыва: пользователя с указанным userId не существует");
+            log.error("Ошибка обновления отзыва: пользователя с указанным userId не существует");
             throw new NotFoundException("пользователя с указанным userId не существует");
         }
 

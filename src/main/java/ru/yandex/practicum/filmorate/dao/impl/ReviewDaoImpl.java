@@ -89,7 +89,7 @@ public class ReviewDaoImpl implements ReviewDao {
     public Review update(Review review) {
         String sql = """
             UPDATE reviews SET
-            content = ?, is_positive = ?, user_id = ?, film_id = ?
+            content = ?, is_positive = ?
             WHERE id = ?
         """;
 
@@ -97,8 +97,6 @@ public class ReviewDaoImpl implements ReviewDao {
                 sql,
                 review.getContent(),
                 review.getIsPositive(),
-                review.getUserId(),
-                review.getFilmId(),
                 review.getReviewId()
         );
         return get(review.getReviewId());

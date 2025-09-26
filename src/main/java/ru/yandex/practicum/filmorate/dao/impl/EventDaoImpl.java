@@ -55,7 +55,7 @@ public class EventDaoImpl implements EventDao {
 
     @Override
     public List<Event> findByUserId(Long userId) {
-        String sql = "SELECT * FROM events WHERE user_id = ?";
+        String sql = "SELECT * FROM events WHERE user_id = ? ORDER BY event_time ASC";
 
         return jdbc.query(sql, rowMapper, userId);
     }

@@ -8,6 +8,7 @@ public class Director {
     private Long id;
 
     @NotNull(message = "Имя режиссера обязательно")
+    @NotBlank(message = "Имя режиссера не может быть пустым")
     @Size(max = 255, message = "Имя режиссера не может превышать 255 символов")
     private String name;
 }
