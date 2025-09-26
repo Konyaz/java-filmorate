@@ -20,28 +20,6 @@ import java.util.List;
 public class UserService {
     @Qualifier("userDbStorage")
     private final UserDao userStorage;
-    private final LikeDao likeDao;
-    private final FilmDao filmDao;
-
-    public List<Film> getRecommendations(Long userId) {
-        List<Long> similarUsers = likeDao.findSimilarUsers(userId);
-
-        if (similarUsers.isEmpty()) {
-            return List.of();
-        }
-
-        Long similarUserId = similarUsers.get(0);
-        return filmDao.getFilmsLikedByUserButNotAnother(similarUserId, userId);
-    }
-
-    public void delete(Long userId) {
-        if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
-        }
-        userStorage.delete(userId);
-        log.info("User deleted id={}", userId);
-    }
-
 
     public User create(@Valid User user) {
         if (user.getName() == null || user.getName().isBlank()) {
