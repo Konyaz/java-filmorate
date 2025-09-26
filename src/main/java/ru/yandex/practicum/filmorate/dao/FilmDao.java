@@ -23,4 +23,6 @@ public interface FilmDao {
     List<Film> getPopular(int count, Integer genreId, Integer year);
 
     boolean existsById(Long id);
+
+    void delete(Long filmId);
 }

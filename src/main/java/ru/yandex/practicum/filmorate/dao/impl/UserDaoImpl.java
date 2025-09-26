@@ -102,4 +102,14 @@ public class UserDaoImpl implements UserDao {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
         return count != 0;
     }
+
+    @Override
+    public void delete(Long userId) {
+        String sql = "DELETE FROM users WHERE id = ?";
+        int deleted = jdbcTemplate.update(sql, userId);
+        if (deleted == 0) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
+        }
+        log.info("User deleted id={}", userId);
+    }
 }

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dao.FilmDao;
 import ru.yandex.practicum.filmorate.dao.LikeDao;
@@ -32,6 +33,14 @@ public class UserService {
 
         Long similarUserId = similarUsers.get(0);
         return filmDao.getFilmsLikedByUserButNotAnother(similarUserId, userId);
+    }
+
+    public void delete(Long userId) {
+        if (userStorage.getById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
+        }
+        userStorage.delete(userId);
+        log.info("User deleted id={}", userId);
     }
 
 
