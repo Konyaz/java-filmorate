@@ -34,6 +34,13 @@ public class UserService {
         return filmDao.getFilmsLikedByUserButNotAnother(similarUserId, userId);
     }
 
+    public void delete(Long userId) {
+        if (userStorage.getById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
+        }
+        userStorage.delete(userId);
+        log.info("User deleted id={}", userId);
+    }
 
     public User create(@Valid User user) {
         if (user.getName() == null || user.getName().isBlank()) {
