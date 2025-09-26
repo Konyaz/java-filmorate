@@ -45,6 +45,14 @@ public class FilmService {
         return filmDao.create(film);
     }
 
+    public void delete(Long filmId) {
+        if (filmDao.getById(filmId).isEmpty()) {
+            throw new NotFoundException("Фильм с ID " + filmId + " не найден");
+        }
+        filmDao.delete(filmId);
+        log.info("Film deleted id={}", filmId);
+    }
+
     public Film update(@Valid Film film) {
         validate(film);
         validateFilmData(film);
