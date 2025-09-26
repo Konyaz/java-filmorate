@@ -71,5 +71,4 @@ public class UserController {
         log.info("GET /users/{}/friends/common/{}", id, otherId);
         return friendService.getCommonFriends(id, otherId);
     }
-
 }
