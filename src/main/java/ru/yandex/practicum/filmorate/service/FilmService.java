@@ -82,9 +82,9 @@ public class FilmService {
         List<Long> filmsIds = likeDao.getUserLikedFilmsId(userId);
         if (!filmsIds.contains(filmId)) {
             likeDao.addLike(filmId, userId);
-            log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
-            eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
         }
+        log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
+        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
 
     }
 
@@ -95,9 +95,9 @@ public class FilmService {
         List<Long> filmsIds = likeDao.getUserLikedFilmsId(userId);
         if (filmsIds.contains(filmId)) {
             likeDao.removeLike(filmId, userId);
-            log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
-            eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), REMOVE.getId(), Instant.now()));
         }
+        log.info("Пользователь {} удалил лайк у фильма {}", userId, filmId);
+        eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {

@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -33,13 +34,13 @@ public class ReviewController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Review create(@RequestBody Review newReview) {
+    public Review create(@Valid @RequestBody Review newReview) {
         return service.add(newReview);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
-    public Review update(@RequestBody Review review) {
+    public Review update(@Valid @RequestBody Review review) {
         return service.update(review);
     }
 

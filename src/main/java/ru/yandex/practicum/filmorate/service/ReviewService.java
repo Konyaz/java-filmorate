@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -55,26 +56,12 @@ public class ReviewService {
         return storage.get(id);
     }
 
-    public Review add(Review newReview) {
-        if (newReview.getContent() == null || newReview.getContent().isBlank()) {
-            log.error("Ошибка добавления отзыва: поле content не может быть пустым");
-            throw new ValidationException("Поле content не может быть пустым");
-        }
-        if (newReview.getIsPositive() == null) {
-            log.error("Ошибка добавления отзыва: поле isPositive не может быть пустым");
-            throw new ValidationException("Поле isPositive не может быть пустым");
-        }
-        if (newReview.getFilmId() == null) {
-            log.error("Ошибка добавления отзыва: поле filmId не может быть пустым");
-            throw new ValidationException("Поле filmId не может быть пустым");
-        }
+    public Review add(@Valid Review newReview) {
+        log.info("POST /reviews -> {}", newReview);
+
         if (!filmStorage.exists(newReview.getFilmId())) {
             log.error("Ошибка добавления отзыва: фильм с указанным filmId не существует");
             throw new NotFoundException("фильм с указанным filmId не существует");
-        }
-        if (newReview.getUserId() == null) {
-            log.error("Ошибка добавления отзыва: поле userId не может быть пустым");
-            throw new ValidationException("Поле userId не может быть пустым");
         }
         if (!userStorage.exists(newReview.getUserId())) {
             log.error("Ошибка добавления отзыва: пользователя с указанным userId не существует");
@@ -83,37 +70,24 @@ public class ReviewService {
 
         Review created = storage.create(newReview);
 
+        log.info("Пользователь {} создал отзыв {}", created.getUserId(), created.getReviewId());
         eventDao.saveEvent(
-                new EventDto(newReview.getUserId(), created.getReviewId(), REVIEW.getId(), ADD.getId(), Instant.now())
+                new EventDto(created.getUserId(), created.getReviewId(), REVIEW.getId(), ADD.getId(), Instant.now())
         );
 
         return created;
     }
 
-    public Review update(Review review) {
+    public Review update(@Valid Review review) {
+        log.info("PUT /reviews/id -> {}", review);
+
         if (!storage.exists(review.getReviewId())) {
             log.error("Ошибка обновления отзыва: отзыва с указанным id не существует");
             throw new NotFoundException("отзыва с указанным id не существует");
         }
-        if (review.getContent() == null || review.getContent().isBlank()) {
-            log.error("Ошибка обновления отзыва: поле content не может быть пустым");
-            throw new ValidationException("Поле content не может быть пустым");
-        }
-        if (review.getIsPositive() == null) {
-            log.error("Ошибка обновления отзыва: поле isPositive не может быть пустым");
-            throw new ValidationException("Поле isPositive не может быть пустым");
-        }
-        if (review.getFilmId() == null) {
-            log.error("Ошибка обновления отзыва: поле filmId не может быть пустым");
-            throw new ValidationException("Поле filmId не может быть пустым");
-        }
         if (!filmStorage.exists(review.getFilmId())) {
             log.error("Ошибка обновления отзыва: фильм с указанным filmId не существует");
             throw new NotFoundException("фильм с указанным filmId не существует");
-        }
-        if (review.getUserId() == null) {
-            log.error("Ошибка обновления отзыва: поле userId не может быть пустым");
-            throw new ValidationException("Поле userId не может быть пустым");
         }
         if (!userStorage.exists(review.getUserId())) {
             log.error("Ошибка обновления отзыва: пользователя с указанным userId не существует");
@@ -122,14 +96,17 @@ public class ReviewService {
 
         Review updated = storage.update(review);
 
+        log.info("Пользователь {} обновил отзыв {}", updated.getUserId(), updated.getReviewId());
         eventDao.saveEvent(
-                new EventDto(review.getUserId(), review.getReviewId(), REVIEW.getId(), UPDATE.getId(), Instant.now())
+                new EventDto(updated.getUserId(), updated.getReviewId(), REVIEW.getId(), UPDATE.getId(), Instant.now())
         );
 
         return updated;
     }
 
     public void delete(long id) {
+        log.info("DELETE /reviews/id -> {}", id);
+
         if (!storage.exists(id)) {
             log.error("Отзыв с указанным id не существует");
             throw new NotFoundException("Отзыв с указанным id не существует");
@@ -138,6 +115,7 @@ public class ReviewService {
         Review deleted = get(id);
         storage.delete(id);
 
+        log.info("Пользователь {} удалил отзыв {}", deleted.getUserId(), id);
         eventDao.saveEvent(
                 new EventDto(deleted.getUserId(), id, REVIEW.getId(), REMOVE.getId(), Instant.now())
         );
@@ -188,7 +166,7 @@ public class ReviewService {
 
         storage.addDislike(id, userId);
 
-        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), ADD.getId(), Instant.now()));
+//        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void removeLike(long id, long userId) {
@@ -226,7 +204,7 @@ public class ReviewService {
 
         storage.removeDislike(id, userId);
 
-        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), REMOVE.getId(), Instant.now()));
+//        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
 }

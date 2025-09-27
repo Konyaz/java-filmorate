@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface EventDao {
 
-    Event findById(Long eventId);
+//    Event findById(Long eventId);
 
-    Event saveEvent(EventDto eventData);
+    void saveEvent(EventDto eventData);
 
     List<Event> findByUserId(Long userId);
 }
