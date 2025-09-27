@@ -28,13 +28,6 @@ public class EventDaoImpl implements EventDao {
     JdbcTemplate jdbc;
     EventRowMapper rowMapper;
 
-//    @Override
-//    public Event findById(Long eventId) {
-//        String sql = "SELECT * FROM events WHERE event_id = ?";
-//
-//        return jdbc.queryForObject(sql, rowMapper, eventId);
-//    }
-
     @Override
     public void saveEvent(EventDto eventData) {
         String sql = "INSERT INTO events (user_id, entity_id, event_type_id, operation_id, event_time)" +
@@ -58,7 +51,6 @@ public class EventDaoImpl implements EventDao {
     @Override
     public List<Event> findByUserId(Long userId) {
         String sql = "SELECT * FROM events WHERE user_id = ?";
-
         return jdbc.query(sql, rowMapper, userId);
     }
 }

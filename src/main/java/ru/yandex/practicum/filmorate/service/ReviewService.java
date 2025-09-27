@@ -141,8 +141,6 @@ public class ReviewService {
         }
 
         storage.addLike(id, userId);
-
-        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void addDislike(long id, long userId) {
@@ -165,8 +163,6 @@ public class ReviewService {
         }
 
         storage.addDislike(id, userId);
-
-//        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void removeLike(long id, long userId) {
@@ -184,8 +180,6 @@ public class ReviewService {
         }
 
         storage.removeLike(id, userId);
-
-        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
     public void removeDislike(long id, long userId) {
@@ -203,8 +197,6 @@ public class ReviewService {
         }
 
         storage.removeDislike(id, userId);
-
-//        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
 }
