@@ -73,8 +73,8 @@ public class ReviewService {
             throw new NotFoundException("фильм с указанным filmId не существует");
         }
         if (newReview.getUserId() == null) {
-            log.error("Ошибка добавления отзыва: поле filmId не может быть пустым");
-            throw new ValidationException("Поле filmId не может быть пустым");
+            log.error("Ошибка добавления отзыва: поле userId не может быть пустым");
+            throw new ValidationException("Поле userId не может быть пустым");
         }
         if (!userStorage.exists(newReview.getUserId())) {
             log.error("Ошибка добавления отзыва: пользователя с указанным userId не существует");
@@ -112,19 +112,21 @@ public class ReviewService {
             throw new NotFoundException("фильм с указанным filmId не существует");
         }
         if (review.getUserId() == null) {
-            log.error("Ошибка обновления отзыва: поле filmId не может быть пустым");
-            throw new ValidationException("Поле filmId не может быть пустым");
+            log.error("Ошибка обновления отзыва: поле userId не может быть пустым");
+            throw new ValidationException("Поле userId не может быть пустым");
         }
         if (!userStorage.exists(review.getUserId())) {
             log.error("Ошибка обновления отзыва: пользователя с указанным userId не существует");
             throw new NotFoundException("пользователя с указанным userId не существует");
         }
 
+        Review updated = storage.update(review);
+
         eventDao.saveEvent(
                 new EventDto(review.getUserId(), review.getReviewId(), REVIEW.getId(), UPDATE.getId(), Instant.now())
         );
 
-        return storage.update(review);
+        return updated;
     }
 
     public void delete(long id) {
@@ -134,11 +136,11 @@ public class ReviewService {
         }
 
         Review deleted = get(id);
+        storage.delete(id);
+
         eventDao.saveEvent(
                 new EventDto(deleted.getUserId(), id, REVIEW.getId(), REMOVE.getId(), Instant.now())
         );
-
-        storage.delete(id);
     }
 
     public void addLike(long id, long userId) {
@@ -146,7 +148,7 @@ public class ReviewService {
             log.error("Отзыв с указанным id не существует");
             throw new NotFoundException("Отзыв с указанным id не существует");
         }
-        if (!userStorage.exists(id)) {
+        if (!userStorage.exists(userId)) {
             log.error("Пользователь с указанным id не существует");
             throw new NotFoundException("Пользователь с указанным id не существует");
         }
@@ -160,9 +162,9 @@ public class ReviewService {
             storage.removeDislike(id, userId);
         }
 
-        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), ADD.getId(), Instant.now()));
-
         storage.addLike(id, userId);
+
+        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void addDislike(long id, long userId) {
@@ -170,7 +172,7 @@ public class ReviewService {
             log.error("Отзыв с указанным id не существует");
             throw new NotFoundException("Отзыв с указанным id не существует");
         }
-        if (!userStorage.exists(id)) {
+        if (!userStorage.exists(userId)) {
             log.error("Пользователь с указанным id не существует");
             throw new NotFoundException("Пользователь с указанным id не существует");
         }
@@ -184,9 +186,9 @@ public class ReviewService {
             storage.removeLike(id, userId);
         }
 
-        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), ADD.getId(), Instant.now()));
-
         storage.addDislike(id, userId);
+
+        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), ADD.getId(), Instant.now()));
     }
 
     public void removeLike(long id, long userId) {
@@ -194,7 +196,7 @@ public class ReviewService {
             log.error("Отзыв с указанным id не существует");
             throw new NotFoundException("Отзыв с указанным id не существует");
         }
-        if (!userStorage.exists(id)) {
+        if (!userStorage.exists(userId)) {
             log.error("Пользователь с указанным id не существует");
             throw new NotFoundException("Пользователь с указанным id не существует");
         }
@@ -203,9 +205,9 @@ public class ReviewService {
             throw new NotFoundException("Пользователь с указанным id не ставил лайк этому отзыву");
         }
 
-        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), REMOVE.getId(), Instant.now()));
-
         storage.removeLike(id, userId);
+
+        eventDao.saveEvent(new EventDto(userId, id, LIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
     public void removeDislike(long id, long userId) {
@@ -213,7 +215,7 @@ public class ReviewService {
             log.error("Отзыв с указанным id не существует");
             throw new NotFoundException("Отзыв с указанным id не существует");
         }
-        if (!userStorage.exists(id)) {
+        if (!userStorage.exists(userId)) {
             log.error("Пользователь с указанным id не существует");
             throw new NotFoundException("Пользователь с указанным id не существует");
         }
@@ -222,9 +224,9 @@ public class ReviewService {
             throw new NotFoundException("Пользователь с указанным id не ставил дизлайк этому отзыву");
         }
 
-        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), REMOVE.getId(), Instant.now()));
-
         storage.removeDislike(id, userId);
+
+        eventDao.saveEvent(new EventDto(userId, id, DISLIKE.getId(), REMOVE.getId(), Instant.now()));
     }
 
 }

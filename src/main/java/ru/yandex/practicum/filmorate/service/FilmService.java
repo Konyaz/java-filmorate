@@ -82,8 +82,8 @@ public class FilmService {
         List<Long> filmsIds = likeDao.getUserLikedFilmsId(userId);
         if (!filmsIds.contains(filmId)) {
             likeDao.addLike(filmId, userId);
-            eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
             log.info("Пользователь {} поставил лайк фильму {}", userId, filmId);
+            eventDao.saveEvent(new EventDto(userId, filmId, LIKE.getId(), ADD.getId(), Instant.now()));
         }
 
     }
