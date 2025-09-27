@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @JdbcTest
 @AutoConfigureTestDatabase
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@Import({FilmDaoImpl.class, GenreDaoImpl.class, MpaDaoImpl.class, FilmDirectorDaoImpl.class, DirectorDaoImpl.class})
+@Import({FilmDaoImpl.class, GenreDaoImpl.class, MpaDaoImpl.class, FilmDirectorDaoImpl.class, DirectorDaoImpl.class, LikeDaoImpl.class})
 @ActiveProfiles("test")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:test-data.sql")
 class FilmDaoImplTest {

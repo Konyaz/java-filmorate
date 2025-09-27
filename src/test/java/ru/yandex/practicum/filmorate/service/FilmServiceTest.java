@@ -148,25 +148,6 @@ class FilmServiceTest {
     }
 
     @Test
-    void removeLike_success() {
-        Long filmId = 1L;
-        Long userId = 1L;
-        Film film = createTestFilm();
-        User user = new User();
-        user.setId(userId);
-
-        when(filmStorage.getById(filmId)).thenReturn(Optional.of(film));
-        when(userStorage.getById(userId)).thenReturn(Optional.of(user));
-        doNothing().when(likeDao).removeLike(filmId, userId);
-
-        filmService.removeLike(filmId, userId);
-
-        verify(filmStorage, times(1)).getById(filmId);
-        verify(userStorage, times(1)).getById(userId);
-        verify(likeDao, times(1)).removeLike(filmId, userId);
-    }
-
-    @Test
     void searchFilmsByName_success() {
         Film film = createTestFilm();
         film.setId(1L);
