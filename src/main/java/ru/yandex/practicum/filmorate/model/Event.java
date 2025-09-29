@@ -22,9 +22,9 @@ public class Event {
 
     Long entityId;
 
-    String eventType;
+    EventType eventType;
 
-    String operation;
+    Operation operation;
 
     @JsonSerialize(using = InstantSerializer.class)
     Instant timestamp;

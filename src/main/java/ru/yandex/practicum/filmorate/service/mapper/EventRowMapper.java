@@ -7,6 +7,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,17 +22,21 @@ public class EventRowMapper implements RowMapper<Event> {
 
     @Override
     public Event mapRow(ResultSet rs, int rowNum) throws SQLException {
-        String eventType = jdbc.queryForObject(
+        String eventTypeString = jdbc.queryForObject(
                 "SELECT name FROM event_types WHERE id = ?",
                 String.class,
                 rs.getLong("event_type_id")
         );
 
-        String operation = jdbc.queryForObject(
+
+        String operationString = jdbc.queryForObject(
                 "SELECT name FROM operations WHERE id = ?",
                 String.class,
                 rs.getLong("operation_id")
         );
+
+        EventType eventType = EventType.valueOf(eventTypeString);
+        Operation operation = Operation.valueOf(operationString);
 
         return Event.builder()
                 .eventId(rs.getLong("event_id"))
