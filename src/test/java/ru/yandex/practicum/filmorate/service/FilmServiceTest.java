@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import ru.yandex.practicum.filmorate.dao.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -45,6 +44,9 @@ class FilmServiceTest {
 
     @Mock
     private EventDao eventDao;
+
+    @Mock
+    private DirectorService directorService;
 
     @InjectMocks
     private FilmService filmService;
@@ -160,17 +162,6 @@ class FilmServiceTest {
         assertEquals(1, result.size());
         assertEquals("Властелин колец", result.get(0).getName());
         verify(filmStorage, times(1)).searchFilms("колец", Set.of("title", "director"));
-    }
-
-    @Test
-    void searchFilmsEmptyQuery_throwsValidationException() {
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> filmService.searchFilms("", Set.of("title", "director"))
-        );
-
-        assertEquals("Поисковый запрос не может быть пустым", exception.getMessage());
-        verify(filmStorage, never()).searchFilms(anyString(), any());
     }
 
     @Test

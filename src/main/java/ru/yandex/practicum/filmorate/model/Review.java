@@ -8,7 +8,6 @@ import lombok.Data;
 public class Review {
     Long reviewId;
 
-    @NotNull(message = "Поле content обязательно к заполнению")
     @NotBlank(message = "Контент не может быть пустым")
     String content;
 

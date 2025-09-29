@@ -33,7 +33,7 @@ public class ReviewService {
             log.error("Параметр count должен быть больше 0");
             throw new ValidationException("Параметр count должен быть больше 0");
         }
-        if (!filmStorage.exists(filmId)) {
+        if (!filmStorage.existsById(filmId)) {
             log.warn("Фильм с id = {} не найден. Возвращен пустой список", filmId);
             return Collections.emptyList();
         }
@@ -59,7 +59,7 @@ public class ReviewService {
     public Review add(@Valid Review newReview) {
         log.info("POST /reviews -> {}", newReview);
 
-        if (!filmStorage.exists(newReview.getFilmId())) {
+        if (!filmStorage.existsById(newReview.getFilmId())) {
             log.error("Ошибка добавления отзыва: фильм с указанным filmId не существует");
             throw new NotFoundException("фильм с указанным filmId не существует");
         }
@@ -85,7 +85,7 @@ public class ReviewService {
             log.error("Ошибка обновления отзыва: отзыва с указанным id не существует");
             throw new NotFoundException("отзыва с указанным id не существует");
         }
-        if (!filmStorage.exists(review.getFilmId())) {
+        if (!filmStorage.existsById(review.getFilmId())) {
             log.error("Ошибка обновления отзыва: фильм с указанным filmId не существует");
             throw new NotFoundException("фильм с указанным filmId не существует");
         }

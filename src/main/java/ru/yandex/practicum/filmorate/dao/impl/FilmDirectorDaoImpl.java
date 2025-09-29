@@ -15,18 +15,6 @@ public class FilmDirectorDaoImpl implements FilmDirectorDao {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public void addDirectorToFilm(Long filmId, Long directorId) {
-        String sql = "INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql, filmId, directorId);
-    }
-
-    @Override
-    public void removeDirectorsFromFilm(Long filmId) {
-        String sql = "DELETE FROM film_directors WHERE film_id = ?";
-        jdbcTemplate.update(sql, filmId);
-    }
-
-    @Override
     public List<Long> getDirectorIdsByFilmId(Long filmId) {
         String sql = "SELECT director_id FROM film_directors WHERE film_id = ?";
         return jdbcTemplate.queryForList(sql, Long.class, filmId);

@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,11 +25,13 @@ public class Film {
     @Size(max = 200, message = "Описание не может превышать 200 символов")
     private String description;
 
+    @NotNull(message = "Дата релиза обязательна")
     private LocalDate releaseDate;
 
     @Min(value = 1, message = "Продолжительность должна быть положительной")
     private Integer duration;
 
+    @NotNull(message = "Поле mpa обязательно к заполнению")
     private Mpa mpa;
 
     private List<Genre> genres = new ArrayList<>();
@@ -36,23 +39,4 @@ public class Film {
     private List<Director> directors = new ArrayList<>();
 
     private Integer rate = 0;
-
-    public void addGenre(Genre genre) {
-        if (!genres.contains(genre)) {
-            genres.add(genre);
-        }
-    }
-
-    public void addDirector(Director director) {
-        if (!directors.contains(director)) {
-            directors.add(director);
-        }
-    }
-
-    public void setMpaId(Long mpaId) {
-        if (mpa == null) {
-            mpa = new Mpa();
-        }
-        mpa.setId(mpaId);
-    }
 }
