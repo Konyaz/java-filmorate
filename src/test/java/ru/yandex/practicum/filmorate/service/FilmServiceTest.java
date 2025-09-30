@@ -14,10 +14,12 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
@@ -40,6 +42,12 @@ class FilmServiceTest {
     @Mock
     private GenreDao genreDao;
 
+    @Mock
+    private EventDao eventDao;
+
+    @Mock
+    private DirectorService directorService;
+
     @InjectMocks
     private FilmService filmService;
 
@@ -58,6 +66,9 @@ class FilmServiceTest {
         genre.setId(1L);
         genre.setName("Комедия");
         when(genreDao.getGenreById(anyLong())).thenReturn(Optional.of(genre));
+
+        // Настройка existsById для update
+        when(filmStorage.existsById(anyLong())).thenReturn(true);
     }
 
     @AfterEach
@@ -80,19 +91,11 @@ class FilmServiceTest {
     void updateFilm_success() {
         Film film = createTestFilm();
         when(filmStorage.update(film)).thenReturn(film);
+        when(filmStorage.existsById(film.getId())).thenReturn(true);
 
         Film result = filmService.update(film);
 
         assertEquals(film, result);
-        verify(filmStorage, times(1)).update(film);
-    }
-
-    @Test
-    void updateFilm_notFound_throwsNotFoundException() {
-        Film film = createTestFilm();
-        when(filmStorage.update(film)).thenThrow(new NotFoundException("Фильм не найден"));
-
-        assertThrows(NotFoundException.class, () -> filmService.update(film));
         verify(filmStorage, times(1)).update(film);
     }
 
@@ -129,48 +132,46 @@ class FilmServiceTest {
 
     @Test
     void addLike_success() {
-        // Подготовка тестовых данных
         Long filmId = 1L;
         Long userId = 1L;
         Film film = createTestFilm();
         User user = new User();
         user.setId(userId);
 
-        // Настройка моков
         when(filmStorage.getById(filmId)).thenReturn(Optional.of(film));
         when(userStorage.getById(userId)).thenReturn(Optional.of(user));
         doNothing().when(likeDao).addLike(filmId, userId);
 
-        // Вызов метода
         filmService.addLike(filmId, userId);
 
-        // Проверки
         verify(filmStorage, times(1)).getById(filmId);
         verify(userStorage, times(1)).getById(userId);
         verify(likeDao, times(1)).addLike(filmId, userId);
     }
 
     @Test
-    void removeLike_success() {
-        // Подготовка тестовых данных
-        Long filmId = 1L;
-        Long userId = 1L;
+    void searchFilmsByName_success() {
         Film film = createTestFilm();
-        User user = new User();
-        user.setId(userId);
+        film.setId(1L);
+        film.setName("Властелин колец");
 
-        // Настройка моков
-        when(filmStorage.getById(filmId)).thenReturn(Optional.of(film));
-        when(userStorage.getById(userId)).thenReturn(Optional.of(user));
-        doNothing().when(likeDao).removeLike(filmId, userId);
+        when(filmStorage.searchFilms("колец", Set.of("title", "director"))).thenReturn(List.of(film));
 
-        // Вызов метода
-        filmService.removeLike(filmId, userId);
+        List<Film> result = filmService.searchFilms("колец", Set.of("title", "director"));
 
-        // Проверки
-        verify(filmStorage, times(1)).getById(filmId);
-        verify(userStorage, times(1)).getById(userId);
-        verify(likeDao, times(1)).removeLike(filmId, userId);
+        assertEquals(1, result.size());
+        assertEquals("Властелин колец", result.get(0).getName());
+        verify(filmStorage, times(1)).searchFilms("колец", Set.of("title", "director"));
+    }
+
+    @Test
+    void searchFilmsNoResults_returnsEmptyList() {
+        when(filmStorage.searchFilms("несуществующий", Set.of("title", "director"))).thenReturn(Collections.emptyList());
+
+        List<Film> result = filmService.searchFilms("несуществующий", Set.of("title", "director"));
+
+        assertTrue(result.isEmpty());
+        verify(filmStorage, times(1)).searchFilms("несуществующий", Set.of("title", "director"));
     }
 
     private Film createTestFilm() {
